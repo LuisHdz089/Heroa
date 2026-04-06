@@ -1,0 +1,10 @@
+PARSER_BEGIN(Heroa)
+
+public class Heroa {
+    public static void main(){
+      System.out.println("1");
+    }
+
+}
+PARSER_END(Heroa)
+
