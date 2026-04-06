@@ -8,15 +8,14 @@ public class Heroa {
           InputStream input = new FileInputStream("prueba.txt");
           Heroa analizador = new Heroa(input);
 
-          // Llamamos a la regla sintáctica principal (Unidad 5)
           analizador.Principal();
 
           System.out.println("Análisis Sintáctico terminado con éxito.");
       } catch (FileNotFoundException e){
           System.out.println("Error: El archivo 'prueba.txt' no existe.");
-      } catch (ParseException e){ // Error de sintaxis (Unidad 5.9)
+      } catch (ParseException e){
           System.err.println("Error Sintáctico: " + e.getMessage());
-      } catch (TokenMgrError e){ // Error léxico (Unidad 4.4)
+      } catch (TokenMgrError e){
           System.err.println("Error Léxico detectado: " + e.getMessage());
       }
     }
@@ -25,14 +24,6 @@ PARSER_END(Heroa)
 
 SKIP : {" "|"\r"|"\t"|"\n"}
 TOKEN :{
-    //Identificadores
-    <IDENTIFICADOR: <MINUSCULA> (<RESTO_IDENTIFICADOR>)*> |
-    <#MINUSCULA: ["a"-"z"]> |
-    <#MAYUSCULA: ["A"-"Z"]> |
-    <#DIGITO: ["0"-"9"]> |
-    <#LETRA: <MINUSCULA> | <MAYUSCULA> > |
-    <#CARACTER: <LETRA> | <DIGITO> > |
-    <#RESTO_IDENTIFICADOR: ("_")? <CARACTER> > |
     //Tipos de Dato
     <ENTERO: "entero"> |
     <DECIMAL: "decimal"> |
@@ -67,6 +58,14 @@ TOKEN :{
     <VARIABLE: "variable"> |
     <DELIMITADOR: ";"> |
     <COMA: ","> |
+    //Identificadores
+    <IDENTIFICADOR: <MINUSCULA> (<RESTO_IDENTIFICADOR>)*> |
+    <#MINUSCULA: ["a"-"z"]> |
+    <#MAYUSCULA: ["A"-"Z"]> |
+    <#DIGITO: ["0"-"9"]> |
+    <#LETRA: <MINUSCULA> | <MAYUSCULA> > |
+    <#CARACTER: <LETRA> | <DIGITO> > |
+    <#RESTO_IDENTIFICADOR: ("_")? <CARACTER> > |
     <VALOR_CADENA: "\"" (~["\""])* "\""> |
     <VALOR_NUMERO: (["0"-"9"])+("."(["0"-"9"])+)?>
 }
@@ -74,24 +73,14 @@ TOKEN :{
 void Principal():{}{
     (Declaracion() )* <EOF>
 }
-void Declaracion():{}{
-    LOOKAHEAD(3)
-    DeclaracionAsignacion()  | DeclaracionSimple() | DeclaracionMultiple()
-}
-
-void DeclaracionSimple():{}{
-    <VARIABLE> TipoDato() <IDENTIFICADOR> <DELIMITADOR>
-    {System.out.println("Sintaxis Correcta: Declaracion Simple");}
-}
-
-void DeclaracionAsignacion():{}{
-    <VARIABLE> TipoDato() <IDENTIFICADOR> <ASIGNACION> ValorVariable() <DELIMITADOR>
-    {System.out.println("Sintaxis Correcta: Declaracion con Asignacion");}
-}
-
-void DeclaracionMultiple():{}{
-    <VARIABLE> TipoDato() <IDENTIFICADOR> <COMA> <IDENTIFICADOR> (<COMA> <IDENTIFICADOR> )* <DELIMITADOR>
-    {System.out.println("Sintaxis Correcta: Declaracion Multiple");}
+void Declaracion():{}
+{
+    <VARIABLE> TipoDato() <IDENTIFICADOR>
+    (
+    <DELIMITADOR> { System.out.println("Sintaxis Correcta: Declaracion Simple"); } |
+    <ASIGNACION> ValorVariable() <DELIMITADOR> { System.out.println("Sintaxis Correcta: Declaracion con Asignacion"); } |
+    <COMA> <IDENTIFICADOR> (<COMA> <IDENTIFICADOR>)* <DELIMITADOR> { System.out.println("Sintaxis Correcta: Declaracion Multiple"); }
+    )
 }
 
 void TipoDato():{}{
