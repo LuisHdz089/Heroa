@@ -1,6 +1,3 @@
-miVariable
-contador_1
-a_B_3_d
-error
-variable123
-nombreMayuscula
+variable entero edad;
+variable cadena nombre = "Heroa";
+variable decimal x, y, z;

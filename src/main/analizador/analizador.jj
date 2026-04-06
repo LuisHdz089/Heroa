@@ -7,16 +7,17 @@ public class Heroa {
       try{
           InputStream input = new FileInputStream("prueba.txt");
           Heroa analizador = new Heroa(input);
-          while (true){
-              Token t = analizador.getNextToken();
-              if(t.kind == HeroaConstants.EOF) break;
-              System.out.println("Token: " + t.kind + " | Lexema: " + t.image);
-          }
-          System.out.println("Analisis lexico terminado.");
-      }catch (FileNotFoundException e){
+
+          // Llamamos a la regla sintáctica principal (Unidad 5)
+          analizador.Principal();
+
+          System.out.println("Análisis Sintáctico terminado con éxito.");
+      } catch (FileNotFoundException e){
           System.out.println("Error: El archivo 'prueba.txt' no existe.");
-      }catch (TokenMgrError e){
-          System.err.println("Error Lexico detectado: " + e.getMessage());
+      } catch (ParseException e){ // Error de sintaxis (Unidad 5.9)
+          System.err.println("Error Sintáctico: " + e.getMessage());
+      } catch (TokenMgrError e){ // Error léxico (Unidad 4.4)
+          System.err.println("Error Léxico detectado: " + e.getMessage());
       }
     }
 }
@@ -55,6 +56,48 @@ TOKEN :{
     //Operadores logicos
     <AND: "&&"> |
     <NOT: "!"> |
-    <OR: "|||">
+    <OR: "|||"> |
+    //Operadores de asignacion
+    <ASIGNACION: "="> |
+    <ASIGNACION_SUMA: "=+"> |
+    <ASIGNACION_RESTA: "=-"> |
+    <ASIGNACION_MULTIPLICACION: "=*"> |
+    <ASIGNACION_DIVISION: "=/"> |
+    //Declaracion de variables
+    <VARIABLE: "variable"> |
+    <DELIMITADOR: ";"> |
+    <COMA: ","> |
+    <VALOR_CADENA: "\"" (~["\""])* "\""> |
+    <VALOR_NUMERO: (["0"-"9"])+("."(["0"-"9"])+)?>
 }
 
+void Principal():{}{
+    (Declaracion() )* <EOF>
+}
+void Declaracion():{}{
+    LOOKAHEAD(3)
+    DeclaracionAsignacion()  | DeclaracionSimple() | DeclaracionMultiple()
+}
+
+void DeclaracionSimple():{}{
+    <VARIABLE> TipoDato() <IDENTIFICADOR> <DELIMITADOR>
+    {System.out.println("Sintaxis Correcta: Declaracion Simple");}
+}
+
+void DeclaracionAsignacion():{}{
+    <VARIABLE> TipoDato() <IDENTIFICADOR> <ASIGNACION> ValorVariable() <DELIMITADOR>
+    {System.out.println("Sintaxis Correcta: Declaracion con Asignacion");}
+}
+
+void DeclaracionMultiple():{}{
+    <VARIABLE> TipoDato() <IDENTIFICADOR> <COMA> <IDENTIFICADOR> (<COMA> <IDENTIFICADOR> )* <DELIMITADOR>
+    {System.out.println("Sintaxis Correcta: Declaracion Multiple");}
+}
+
+void TipoDato():{}{
+    <ENTERO> |<DECIMAL> |<CHAR> |<BOOLEANO> | <CADENA>
+}
+
+void ValorVariable():{}{
+    <VALOR_CADENA> | <VALOR_NUMERO>
+}
