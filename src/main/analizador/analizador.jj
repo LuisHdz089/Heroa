@@ -1,10 +1,35 @@
+
 PARSER_BEGIN(Heroa)
+import java.io.*;
 
 public class Heroa {
     public static void main(){
-      System.out.println("1");
+      try{
+          InputStream input = new FileInputStream("prueba.txt");
+          Heroa analizador = new Heroa(input);
+          while (true){
+              Token t = analizador.getNextToken();
+              if(t.kind == HeroaConstants.EOF) break;
+              System.out.println("Token: " + t.kind + " | Lexema: " + t.image);
+          }
+          System.out.println("Analisis lexico terminado.");
+      }catch (FileNotFoundException e){
+          System.out.println("Error: El archivo 'prueba.txt' no existe.");
+      }catch (TokenMgrError e){
+          System.err.println("Error Lexico detectado: " + e.getMessage());
+      }
     }
-
 }
 PARSER_END(Heroa)
+
+SKIP : {" "|"\r"|"\t"|"\n"}
+TOKEN :{
+    <IDENTIFICADOR: <MINUSCULA> (<RESTO_IDENTIFICADOR>)*> |
+    <#MINUSCULA: ["a"-"z"]> |
+    <#MAYUSCULA: ["A"-"Z"]> |
+    <#DIGITO: ["0"-"9"]> |
+    <#LETRA: <MINUSCULA> | <MAYUSCULA> > |
+    <#CARACTER: <LETRA> | <DIGITO> > |
+    <#RESTO_IDENTIFICADOR: ("_")? <CARACTER> >
+}
 
