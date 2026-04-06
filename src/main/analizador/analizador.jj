@@ -3,7 +3,7 @@ PARSER_BEGIN(Heroa)
 import java.io.*;
 
 public class Heroa {
-    public static void main(){
+    public static void main(String[] args){
       try{
           InputStream input = new FileInputStream("prueba.txt");
           Heroa analizador = new Heroa(input);
@@ -24,12 +24,37 @@ PARSER_END(Heroa)
 
 SKIP : {" "|"\r"|"\t"|"\n"}
 TOKEN :{
+    //Identificadores
     <IDENTIFICADOR: <MINUSCULA> (<RESTO_IDENTIFICADOR>)*> |
     <#MINUSCULA: ["a"-"z"]> |
     <#MAYUSCULA: ["A"-"Z"]> |
     <#DIGITO: ["0"-"9"]> |
     <#LETRA: <MINUSCULA> | <MAYUSCULA> > |
     <#CARACTER: <LETRA> | <DIGITO> > |
-    <#RESTO_IDENTIFICADOR: ("_")? <CARACTER> >
+    <#RESTO_IDENTIFICADOR: ("_")? <CARACTER> > |
+    //Tipos de Dato
+    <ENTERO: "entero"> |
+    <DECIMAL: "decimal"> |
+    <CHAR: "caracter"> |
+    <BOOLEANO: "booleano"> |
+    <CADENA: "cadena"> |
+    //Operadores Aritmeticos
+    <SUMA: "+"> |
+    <RESTA: "-"> |
+    <MULTIPLICACION: "*"> |
+    <DIVISION: "/"> |
+    <MODULO: "%"> |
+    <POTENCIA: "**">|
+    //Operadores Relacionales
+    <IGUAL_QUE: "=="> |
+    <DIFERENTE_DE: "=!"> |
+    <MAYOR_QUE: ">"> |
+    <MENOR_QUE: "<"> |
+    <MAYOR_IGUAL: ">="> |
+    <MENOR_IGUAL: "<="> |
+    //Operadores logicos
+    <AND: "&&"> |
+    <NOT: "!"> |
+    <OR: "|||">
 }
 

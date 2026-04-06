@@ -1,6 +1,6 @@
 miVariable
 contador_1
 a_B_3_d
-_error
-123variable
-NombreMayuscula
+error
+variable123
+nombreMayuscula
