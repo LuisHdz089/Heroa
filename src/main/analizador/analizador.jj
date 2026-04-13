@@ -1,4 +1,3 @@
-
 PARSER_BEGIN(Heroa)
 import java.io.*;
 
@@ -7,9 +6,7 @@ public class Heroa {
       try{
           InputStream input = new FileInputStream("prueba.txt");
           Heroa analizador = new Heroa(input);
-
           analizador.Principal();
-
           System.out.println("Análisis Sintáctico terminado con éxito.");
       } catch (FileNotFoundException e){
           System.out.println("Error: El archivo 'prueba.txt' no existe.");
@@ -23,70 +20,230 @@ public class Heroa {
 PARSER_END(Heroa)
 
 SKIP : {" "|"\r"|"\t"|"\n"}
+
 TOKEN :{
-    //Tipos de Dato
-    <ENTERO: "entero"> |
-    <DECIMAL: "decimal"> |
-    <CHAR: "caracter"> |
-    <BOOLEANO: "booleano"> |
-    <CADENA: "cadena"> |
-    //Operadores Aritmeticos
-    <SUMA: "+"> |
-    <RESTA: "-"> |
-    <MULTIPLICACION: "*"> |
-    <DIVISION: "/"> |
-    <MODULO: "%"> |
-    <POTENCIA: "**">|
-    //Operadores Relacionales
-    <IGUAL_QUE: "=="> |
-    <DIFERENTE_DE: "=!"> |
-    <MAYOR_QUE: ">"> |
-    <MENOR_QUE: "<"> |
-    <MAYOR_IGUAL: ">="> |
-    <MENOR_IGUAL: "<="> |
-    //Operadores logicos
-    <AND: "&&"> |
-    <NOT: "!"> |
-    <OR: "|||"> |
-    //Operadores de asignacion
-    <ASIGNACION: "="> |
-    <ASIGNACION_SUMA: "=+"> |
-    <ASIGNACION_RESTA: "=-"> |
-    <ASIGNACION_MULTIPLICACION: "=*"> |
-    <ASIGNACION_DIVISION: "=/"> |
-    //Declaracion de variables
-    <VARIABLE: "variable"> |
-    <DELIMITADOR: ";"> |
-    <COMA: ","> |
-    //Identificadores
+    // Palabras reservadas
+    <SI: "si"> | <SINO: "sino"> | <SINO_SI: "sino_si"> |
+    <MIENTRAS: "mientras"> | <PARA: "para"> |
+    <HACER: "hacer"> | <ROMPER: "romper"> | <CONTINUAR: "continuar"> |
+    <VARIABLE: "variable"> | <VERDADERO: "verdadero"> | <FALSO: "falso"> |
+    // Tipos de dato
+    <ENTERO: "entero"> | <DECIMAL: "decimal"> | <CHAR: "caracter"> |
+    <BOOLEANO: "booleano"> | <CADENA: "cadena"> |
+    // Operadores (los más largos primero)
+    <POTENCIA: "**"> | <AND: "&&"> | <OR: "|||"> |
+    <IGUAL_QUE: "=="> | <DIFERENTE_DE: "=!"> |
+    <MAYOR_IGUAL: ">="> | <MENOR_IGUAL: "<="> |
+    <ASIGNACION_SUMA: "=+"> | <ASIGNACION_RESTA: "=-"> |
+    <ASIGNACION_MULTIPLICACION: "=*"> | <ASIGNACION_DIVISION: "=/"> |
+    <MAYOR_QUE: ">"> | <MENOR_QUE: "<"> |
+    <SUMA: "+"> | <RESTA: "-"> | <MULTIPLICACION: "*"> |
+    <DIVISION: "/"> | <MODULO: "%"> |
+    <NOT: "!"> | <ASIGNACION: "="> |
+    // Puntuacion
+    <LLAVE_ABRE: "{"> | <LLAVE_CIERRA: "}"> |
+    <PAREN_ABRE: "("> | <PAREN_CIERRA: ")"> |
+    <DELIMITADOR: ";"> | <COMA: ","> |
+    // Identificadores y valores
     <IDENTIFICADOR: <MINUSCULA> (<RESTO_IDENTIFICADOR>)*> |
-    <#MINUSCULA: ["a"-"z"]> |
-    <#MAYUSCULA: ["A"-"Z"]> |
-    <#DIGITO: ["0"-"9"]> |
-    <#LETRA: <MINUSCULA> | <MAYUSCULA> > |
-    <#CARACTER: <LETRA> | <DIGITO> > |
-    <#RESTO_IDENTIFICADOR: ("_")? <CARACTER> > |
+    <#MINUSCULA: ["a"-"z"]> | <#MAYUSCULA: ["A"-"Z"]> |
+    <#DIGITO: ["0"-"9"]> | <#LETRA: <MINUSCULA> | <MAYUSCULA>> |
+    <#CARACTER: <LETRA> | <DIGITO>> |
+    <#RESTO_IDENTIFICADOR: ("_")? <CARACTER>> |
     <VALOR_CADENA: "\"" (~["\""])* "\""> |
-    <VALOR_NUMERO: (["0"-"9"])+("."(["0"-"9"])+)?>
+    <VALOR_NUMERO: (["0"-"9"])+ ("." (["0"-"9"])+)?>
 }
 
-void Principal():{}{
-    (Declaracion() )* <EOF>
+void Principal():{}
+{
+    (Sentencia())* <EOF>
 }
+
+void Sentencia():{}
+{
+    LOOKAHEAD(<VARIABLE>)    Declaracion()    |
+    LOOKAHEAD(<SI>)          Condicional()    |
+    LOOKAHEAD(<MIENTRAS>)    Mientras()       |
+    LOOKAHEAD(<HACER>)       HacerMientras()  |
+    LOOKAHEAD(<PARA>)        Para()           |
+    LOOKAHEAD(2)             Asignacion()     |
+    LOOKAHEAD(2)             Imprimir()       |
+    Leer()
+}
+
+void SentenciaCiclo():{}
+{
+    LOOKAHEAD(<ROMPER>)    <ROMPER>    <DELIMITADOR> { System.out.println("Sintaxis Correcta: romper"); }    |
+    LOOKAHEAD(<CONTINUAR>) <CONTINUAR> <DELIMITADOR> { System.out.println("Sintaxis Correcta: continuar"); } |
+    Sentencia()
+}
+
+void CuerpoCiclo():{}
+{
+    (SentenciaCiclo())+
+}
+
 void Declaracion():{}
 {
     <VARIABLE> TipoDato() <IDENTIFICADOR>
     (
-    <DELIMITADOR> { System.out.println("Sintaxis Correcta: Declaracion Simple"); } |
-    <ASIGNACION> ValorVariable() <DELIMITADOR> { System.out.println("Sintaxis Correcta: Declaracion con Asignacion"); } |
-    <COMA> <IDENTIFICADOR> (<COMA> <IDENTIFICADOR>)* <DELIMITADOR> { System.out.println("Sintaxis Correcta: Declaracion Multiple"); }
+        <DELIMITADOR>
+        { System.out.println("Sintaxis Correcta: Declaracion Simple"); }
+        |
+        <ASIGNACION> ValorVariable() <DELIMITADOR>
+        { System.out.println("Sintaxis Correcta: Declaracion con Asignacion"); }
+        |
+        <COMA> <IDENTIFICADOR> (<COMA> <IDENTIFICADOR>)* <DELIMITADOR>
+        { System.out.println("Sintaxis Correcta: Declaracion Multiple"); }
     )
 }
 
-void TipoDato():{}{
-    <ENTERO> |<DECIMAL> |<CHAR> |<BOOLEANO> | <CADENA>
+void Asignacion():{}
+{
+    <IDENTIFICADOR>
+    (<ASIGNACION> | <ASIGNACION_SUMA> | <ASIGNACION_RESTA> |
+     <ASIGNACION_MULTIPLICACION> | <ASIGNACION_DIVISION>)
+    ExpresionAritmetica() <DELIMITADOR>
+    { System.out.println("Sintaxis Correcta: Asignacion"); }
 }
 
-void ValorVariable():{}{
-    <VALOR_CADENA> | <VALOR_NUMERO>
+void TipoDato():{}
+{
+    <ENTERO> | <DECIMAL> | <CHAR> | <BOOLEANO> | <CADENA>
+}
+
+void ValorVariable():{}
+{
+    <VALOR_CADENA> | <VALOR_NUMERO> | <VERDADERO> | <FALSO> | <IDENTIFICADOR>
+}
+
+// ExpresionLogica: LOOKAHEAD para evitar unreachable
+void ExpresionLogica():{}
+{
+    LOOKAHEAD(<NOT>)
+    <NOT> ExpresionLogica()
+    |
+    LOOKAHEAD(<VERDADERO>)
+    <VERDADERO>
+    |
+    LOOKAHEAD(<FALSO>)
+    <FALSO>
+    |
+    ExpresionRelacional() ((<AND> | <OR>) ExpresionRelacional())*
+}
+
+void ExpresionRelacional():{}
+{
+    ExpresionAritmetica()
+    (
+        (<IGUAL_QUE> | <DIFERENTE_DE> | <MAYOR_QUE> | <MENOR_QUE> |
+         <MAYOR_IGUAL> | <MENOR_IGUAL>)
+        ExpresionAritmetica()
+    )?
+}
+
+void ExpresionAritmetica():{}
+{
+    Termino() ((<SUMA> | <RESTA>) Termino())*
+}
+
+void Termino():{}
+{
+    Factor() ((<MULTIPLICACION> | <DIVISION> | <MODULO> | <POTENCIA>) Factor())*
+}
+
+// Factor: LOOKAHEAD para distinguir entre parentesis, valores y identificador
+void Factor():{}
+{
+    LOOKAHEAD(<PAREN_ABRE>)
+    <PAREN_ABRE> ExpresionAritmetica() <PAREN_CIERRA>
+    |
+    LOOKAHEAD(<VALOR_NUMERO>) <VALOR_NUMERO>
+    |
+    LOOKAHEAD(<VALOR_CADENA>) <VALOR_CADENA>
+    |
+    LOOKAHEAD(<VERDADERO>)    <VERDADERO>
+    |
+    LOOKAHEAD(<FALSO>)        <FALSO>
+    |
+    <IDENTIFICADOR>
+}
+
+void Condicional():{}
+{
+    <SI> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA>
+    <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
+    { System.out.println("Sintaxis Correcta: si"); }
+    (
+        LOOKAHEAD(<SINO_SI>) CadenaSinoSi() |
+        LOOKAHEAD(<SINO>)
+        <SINO> <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
+        { System.out.println("Sintaxis Correcta: sino"); }
+    )?
+}
+
+void CadenaSinoSi():{}
+{
+    <SINO_SI> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA>
+    <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
+    { System.out.println("Sintaxis Correcta: sino_si"); }
+    (
+        LOOKAHEAD(<SINO_SI>) CadenaSinoSi() |
+        LOOKAHEAD(<SINO>)
+        <SINO> <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
+        { System.out.println("Sintaxis Correcta: sino final"); }
+    )?
+}
+
+void Mientras():{}
+{
+    <MIENTRAS> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA>
+    <LLAVE_ABRE> CuerpoCiclo() <LLAVE_CIERRA>
+    { System.out.println("Sintaxis Correcta: mientras"); }
+}
+
+void HacerMientras():{}
+{
+    <HACER> <LLAVE_ABRE> CuerpoCiclo() <LLAVE_CIERRA>
+    <MIENTRAS> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA> <DELIMITADOR>
+    { System.out.println("Sintaxis Correcta: hacer_mientras"); }
+}
+
+void Para():{}
+{
+    <PARA> <PAREN_ABRE>
+        InicioPara() <DELIMITADOR>
+        ExpresionLogica() <DELIMITADOR>
+        Actualizacion()
+    <PAREN_CIERRA>
+    <LLAVE_ABRE> CuerpoCiclo() <LLAVE_CIERRA>
+    { System.out.println("Sintaxis Correcta: para"); }
+}
+
+void InicioPara():{}
+{
+    LOOKAHEAD(<VARIABLE>)
+    <VARIABLE> TipoDato() <IDENTIFICADOR> <ASIGNACION> ValorVariable()
+    |
+    <IDENTIFICADOR> <ASIGNACION> ValorVariable()
+}
+
+void Actualizacion():{}
+{
+    <IDENTIFICADOR>
+    (<ASIGNACION> | <ASIGNACION_SUMA> | <ASIGNACION_RESTA> |
+     <ASIGNACION_MULTIPLICACION> | <ASIGNACION_DIVISION>)
+    ExpresionAritmetica()
+}
+
+void Imprimir():{}
+{
+    <IDENTIFICADOR> <PAREN_ABRE> ValorVariable() <PAREN_CIERRA> <DELIMITADOR>
+    { System.out.println("Sintaxis Correcta: imprimir"); }
+}
+
+void Leer():{}
+{
+    <IDENTIFICADOR> <PAREN_ABRE> <IDENTIFICADOR> <PAREN_CIERRA> <DELIMITADOR>
+    { System.out.println("Sintaxis Correcta: leer"); }
 }
