@@ -1,3 +1,32 @@
 variable entero edad;
 variable cadena nombre = "Heroa";
-variable decimal x, y, z;
+variable decimal x, y, z
+
+
+
+funcion suma(entero a, entero b){
+    retornar a + b;
+}
+
+suma(5, 10);
+
+
+
+
+variable entero resultado = 0;
+
+funcion suma(entero a, entero b){
+    retornar a + b;
+}
+
+para(variable entero i = 0; i < 5; i =+ 1){
+    resultado =+ i;
+}
+
+si(resultado > 10){
+    imprimir("mayor");
+}sino{
+    imprimir("menor");
+}
+
+suma(3, 7);
