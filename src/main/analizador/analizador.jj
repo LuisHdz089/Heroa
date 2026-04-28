@@ -179,25 +179,26 @@ void Factor():{}
 void Condicional():{}
 {
     <SI> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA>
-    <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
+    <LLAVE_ABRE> (SentenciaCiclo())* <LLAVE_CIERRA>
     { System.out.println("Sintaxis Correcta: si"); }
     (
         LOOKAHEAD(<SINO_SI>) CadenaSinoSi() |
         LOOKAHEAD(<SINO>)
-        <SINO> <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
+        <SINO> <LLAVE_ABRE> (SentenciaCiclo())* <LLAVE_CIERRA>
         { System.out.println("Sintaxis Correcta: sino"); }
     )?
 }
 
+
 void CadenaSinoSi():{}
 {
     <SINO_SI> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA>
-    <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
+    <LLAVE_ABRE> (SentenciaCiclo())* <LLAVE_CIERRA>
     { System.out.println("Sintaxis Correcta: sino_si"); }
     (
         LOOKAHEAD(<SINO_SI>) CadenaSinoSi() |
         LOOKAHEAD(<SINO>)
-        <SINO> <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
+        <SINO> <LLAVE_ABRE> (SentenciaCiclo())* <LLAVE_CIERRA>
         { System.out.println("Sintaxis Correcta: sino final"); }
     )?
 }
