@@ -3,7 +3,6 @@ variable cadena nombre = "Heroa";
 variable decimal x, y, z
 
 
-
 funcion suma(entero a, entero b){
     retornar a + b;
 }
@@ -19,9 +18,13 @@ funcion suma(entero a, entero b){
     retornar a + b;
 }
 
+
+
 para(variable entero i = 0; i < 5; i =+ 1){
     resultado =+ i;
 }
+
+
 
 si(resultado > 10){
     imprimir("mayor");
@@ -30,3 +33,22 @@ si(resultado > 10){
 }
 
 suma(3, 7);
+
+
+
+variable entero contador = 0;
+mientras(contador < 10){
+    contador =+ 1;
+}
+
+
+variable entero i = 0;
+mientras(i < 10){
+    si(i == 5){
+        romper;
+    }
+    si(i == 3){
+        continuar;
+    }
+    i =+ 1;
+}
