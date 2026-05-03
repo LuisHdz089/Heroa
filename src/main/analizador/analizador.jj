@@ -24,11 +24,13 @@ SKIP : {" "|"\r"|"\t"|"\n"}
 
 TOKEN :{
     // Palabras reservadas
+    <PRINCIPAL: "Principal"> |
     <SI: "si"> | <SINO: "sino"> | <SINO_SI: "sino_si"> |
     <MIENTRAS: "mientras"> | <PARA: "para"> |
     <HACER: "hacer"> | <ROMPER: "romper"> | <CONTINUAR: "continuar"> |
     <FUNCION: "funcion"> | <RETORNAR: "retornar"> |
     <VARIABLE: "variable"> | <VERDADERO: "verdadero"> | <FALSO: "falso"> |
+    <IMPRIMIR: "imprimir"> | <LEER: "leer"> |
     // Tipos de dato
     <ENTERO: "entero"> | <DECIMAL: "decimal"> | <CHAR: "caracter"> |
     <BOOLEANO: "booleano"> | <CADENA: "cadena"> |
@@ -56,9 +58,11 @@ TOKEN :{
     <VALOR_NUMERO: (["0"-"9"])+ ("." (["0"-"9"])+)?>
 }
 
+// Punto de entrada — todo programa Heroa empieza con principal
 void Principal():{}
 {
-    (Sentencia())* <EOF>
+    <PRINCIPAL> <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA> <EOF>
+    { System.out.println("Sintaxis Correcta: Principal"); }
 }
 
 void Sentencia():{}
@@ -70,14 +74,14 @@ void Sentencia():{}
     LOOKAHEAD(<MIENTRAS>)    Mientras()        |
     LOOKAHEAD(<HACER>)       HacerMientras()   |
     LOOKAHEAD(<PARA>)        Para()            |
-    LOOKAHEAD(<IDENTIFICADOR> <PAREN_ABRE>) LlamadaFuncion() |
-    LOOKAHEAD(<IDENTIFICADOR> <ASIGNACION>) Asignacion()     |
-    LOOKAHEAD(<IDENTIFICADOR> <ASIGNACION_SUMA>) Asignacion() |
-    LOOKAHEAD(<IDENTIFICADOR> <ASIGNACION_RESTA>) Asignacion() |
-    LOOKAHEAD(<IDENTIFICADOR> <ASIGNACION_MULTIPLICACION>) Asignacion() |
-    LOOKAHEAD(<IDENTIFICADOR> <ASIGNACION_DIVISION>) Asignacion() |
-    LOOKAHEAD(2) Imprimir() |
-    Leer()
+    LOOKAHEAD(<IMPRIMIR>)    Imprimir()        |
+    LOOKAHEAD(<LEER>)        Leer()            |
+    LOOKAHEAD(<IDENTIFICADOR> <PAREN_ABRE>)                LlamadaFuncion() |
+    LOOKAHEAD(<IDENTIFICADOR> <ASIGNACION>)                Asignacion()     |
+    LOOKAHEAD(<IDENTIFICADOR> <ASIGNACION_SUMA>)           Asignacion()     |
+    LOOKAHEAD(<IDENTIFICADOR> <ASIGNACION_RESTA>)          Asignacion()     |
+    LOOKAHEAD(<IDENTIFICADOR> <ASIGNACION_MULTIPLICACION>) Asignacion()     |
+    LOOKAHEAD(<IDENTIFICADOR> <ASIGNACION_DIVISION>)       Asignacion()
 }
 
 void SentenciaCiclo():{}
@@ -189,7 +193,6 @@ void Condicional():{}
     )?
 }
 
-
 void CadenaSinoSi():{}
 {
     <SINO_SI> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA>
@@ -244,7 +247,6 @@ void Actualizacion():{}
     ExpresionAritmetica()
 }
 
-// Definicion de funcion con o sin parametros
 void DefFuncion():{}
 {
     <FUNCION> <IDENTIFICADOR> <PAREN_ABRE>
@@ -264,7 +266,6 @@ void Param():{}
     TipoDato() <IDENTIFICADOR>
 }
 
-// Llamada a funcion con o sin argumentos
 void LlamadaFuncion():{}
 {
     <IDENTIFICADOR> <PAREN_ABRE>
@@ -278,7 +279,6 @@ void ListaArgs():{}
     ExpresionAritmetica() (<COMA> ExpresionAritmetica())*
 }
 
-// Retornar con valor o sin valor
 void Retornar():{}
 {
     <RETORNAR>
@@ -293,12 +293,12 @@ void Retornar():{}
 
 void Imprimir():{}
 {
-    <IDENTIFICADOR> <PAREN_ABRE> ValorVariable() <PAREN_CIERRA> <DELIMITADOR>
+    <IMPRIMIR> <PAREN_ABRE> ValorVariable() <PAREN_CIERRA> <DELIMITADOR>
     { System.out.println("Sintaxis Correcta: imprimir"); }
 }
 
 void Leer():{}
 {
-    <IDENTIFICADOR> <PAREN_ABRE> <IDENTIFICADOR> <PAREN_CIERRA> <DELIMITADOR>
+    <LEER> <PAREN_ABRE> <IDENTIFICADOR> <PAREN_CIERRA> <DELIMITADOR>
     { System.out.println("Sintaxis Correcta: leer"); }
 }
