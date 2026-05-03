@@ -1,54 +1,16 @@
-variable entero edad;
-variable cadena nombre = "Heroa";
-variable decimal x, y, z
+
+Principal{
+    variable entero edad = 18;
+    imprimir("hola");
+    leer(edad);
+
+    variable entero contador = 0;       
+        mientras(contador < 10){
+            contador =+ 1;
+        }
 
 
-funcion suma(entero a, entero b){
-    retornar a + b;
-}
-
-suma(5, 10);
-
-
-
-
-variable entero resultado = 0;
-
-funcion suma(entero a, entero b){
-    retornar a + b;
-}
-
-
-
-para(variable entero i = 0; i < 5; i =+ 1){
-    resultado =+ i;
-}
-
-
-
-si(resultado > 10){
-    imprimir("mayor");
-}sino{
-    imprimir("menor");
-}
-
-suma(3, 7);
-
-
-
-variable entero contador = 0;
-mientras(contador < 10){
-    contador =+ 1;
-}
-
-
-variable entero i = 0;
-mientras(i < 10){
-    si(i == 5){
-        romper;
-    }
-    si(i == 3){
-        continuar;
-    }
-    i =+ 1;
+        para(variable entero i = 0; i < 5; i =+ 1){
+             resultado =+ i;
+        }
 }
