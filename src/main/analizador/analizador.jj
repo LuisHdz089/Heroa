@@ -7,7 +7,7 @@ public class Heroa {
       try{
           InputStream input = new FileInputStream("prueba.txt");
           Heroa analizador = new Heroa(input);
-          analizador.Principal();
+          analizador.Programa();
           System.out.println("Análisis Sintáctico terminado con éxito.");
       } catch (FileNotFoundException e){
           System.out.println("Error: El archivo 'prueba.txt' no existe.");
@@ -24,200 +24,250 @@ SKIP : {" "|"\r"|"\t"|"\n"}
 
 TOKEN :{
     // Palabras reservadas
-    <PRINCIPAL: "Principal"> |
-    <SI: "si"> | <SINO: "sino"> | <SINO_SI: "sino_si"> |
-    <MIENTRAS: "mientras"> | <PARA: "para"> |
-    <HACER: "hacer"> | <ROMPER: "romper"> | <CONTINUAR: "continuar"> |
-    <FUNCION: "funcion"> | <RETORNAR: "retornar"> |
-    <VARIABLE: "variable"> | <VERDADERO: "verdadero"> | <FALSO: "falso"> |
-    <IMPRIMIR: "imprimir"> | <LEER: "leer"> |
+    <PRINCIPAL: "Principal">  |
+    <SI: "si">                |
+    <SINO: "sino">            |
+    <SINO_SI: "sino_si">      |
+    <MIENTRAS: "mientras">    |
+    <PARA: "para">            |
+    <HACER: "hacer">          |
+    <ROMPER: "romper">        |
+    <CONTINUAR: "continuar">  |
+    <FUNCION: "funcion">      |
+    <RETORNAR: "retornar">    |
+    <VARIABLE: "variable">    |
+    <VERDADERO: "verdadero">  |
+    <FALSO: "falso">          |
+    <IMPRIMIR: "imprimir">    |
+    <LEER: "leer">            |
     // Tipos de dato
-    <ENTERO: "entero"> | <DECIMAL: "decimal"> | <CHAR: "caracter"> |
-    <BOOLEANO: "booleano"> | <CADENA: "cadena"> |
+    <ENTERO: "entero">     |
+    <DECIMAL: "decimal">   |
+    <CHAR: "caracter">     |
+    <BOOLEANO: "booleano"> |
+    <CADENA: "cadena">     |
     // Operadores (los más largos primero)
-    <POTENCIA: "**"> | <AND: "&&"> | <OR: "|||"> |
-    <IGUAL_QUE: "=="> | <DIFERENTE_DE: "=!"> |
-    <MAYOR_IGUAL: ">="> | <MENOR_IGUAL: "<="> |
-    <ASIGNACION_SUMA: "=+"> | <ASIGNACION_RESTA: "=-"> |
-    <ASIGNACION_MULTIPLICACION: "=*"> | <ASIGNACION_DIVISION: "=/"> |
-    <MAYOR_QUE: ">"> | <MENOR_QUE: "<"> |
-    <SUMA: "+"> | <RESTA: "-"> | <MULTIPLICACION: "*"> |
-    <DIVISION: "/"> | <MODULO: "%"> |
-    <NOT: "!"> | <ASIGNACION: "="> |
+    <POTENCIA: "**">                  |
+    <AND: "&&">                       |
+    <OR: "|||">                       |
+    <IGUAL_QUE: "==">                 |
+    <DIFERENTE_DE: "=!">              |
+    <MAYOR_IGUAL: ">=">               |
+    <MENOR_IGUAL: "<=">               |
+    <ASIGNACION_SUMA: "=+">           |
+    <ASIGNACION_RESTA: "=-">          |
+    <ASIGNACION_MULTIPLICACION: "=*"> |
+    <ASIGNACION_DIVISION: "=/">       |
+    <ASIGNACION_MODULO: "=%">         |
+    //Operadores Simples
+    <MAYOR_QUE: ">">      |
+    <MENOR_QUE: "<">      |
+    <SUMA: "+">           |
+    <RESTA: "-">          |
+    <MULTIPLICACION: "*"> |
+    <DIVISION: "/">       |
+    <MODULO: "%">         |
+    <NOT: "!">            |
+    <ASIGNACION: "=">     |
     // Puntuacion
-    <LLAVE_ABRE: "{"> | <LLAVE_CIERRA: "}"> |
-    <PAREN_ABRE: "("> | <PAREN_CIERRA: ")"> |
-    <DELIMITADOR: ";"> | <COMA: ","> |
+    <LLAVE_ABRE: "{">   |
+    <LLAVE_CIERRA: "}"> |
+    <PAREN_ABRE: "(">   |
+    <PAREN_CIERRA: ")"> |
+    <DELIMITADOR: ";">  |
+    <COMA: ",">         |
     // Identificadores y valores
     <IDENTIFICADOR: <MINUSCULA> (<RESTO_IDENTIFICADOR>)*> |
-    <#MINUSCULA: ["a"-"z"]> | <#MAYUSCULA: ["A"-"Z"]> |
-    <#DIGITO: ["0"-"9"]> | <#LETRA: <MINUSCULA> | <MAYUSCULA>> |
-    <#CARACTER: <LETRA> | <DIGITO>> |
-    <#RESTO_IDENTIFICADOR: ("_")? <CARACTER>> |
-    <VALOR_CADENA: "\"" (~["\""])* "\""> |
+    <#MINUSCULA: ["a"-"z"]>                               |
+    <#MAYUSCULA: ["A"-"Z"]>                               |
+    <#DIGITO: ["0"-"9"]>                                  |
+    <#LETRA: <MINUSCULA> | <MAYUSCULA>>                   |
+    <#CARACTER: <LETRA> | <DIGITO>>                       |
+    <#RESTO_IDENTIFICADOR: ("_")? <CARACTER>>             |
+    <VALOR_CADENA: "\"" (~["\""])* "\"">                  |
     <VALOR_NUMERO: (["0"-"9"])+ ("." (["0"-"9"])+)?>
 }
 
-// Punto de entrada — todo programa Heroa empieza con principal
+//Estructura Principal
+
+void Programa():{}
+{
+    (DefFuncion())* Principal() (DefFuncion())* <EOF>
+    {System.out.println("Sintaxis Correcta: Programa completo");}
+}
+
 void Principal():{}
 {
-    <PRINCIPAL> <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA> <EOF>
-    { System.out.println("Sintaxis Correcta: Principal"); }
+    <PRINCIPAL> <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
+    {System.out.println("Sintaxis Correcta: Bloque Principal");}
 }
 
-void Sentencia():{}
+void Sentencia(): {}
 {
-    LOOKAHEAD(<VARIABLE>)    Declaracion()     |
-    LOOKAHEAD(<FUNCION>)     DefFuncion()      |
-    LOOKAHEAD(<RETORNAR>)    Retornar()        |
-    LOOKAHEAD(<SI>)          Condicional()     |
-    LOOKAHEAD(<MIENTRAS>)    Mientras()        |
-    LOOKAHEAD(<HACER>)       HacerMientras()   |
-    LOOKAHEAD(<PARA>)        Para()            |
-    LOOKAHEAD(<IMPRIMIR>)    Imprimir()        |
-    LOOKAHEAD(<LEER>)        Leer()            |
-    LOOKAHEAD(<IDENTIFICADOR> <PAREN_ABRE>)                LlamadaFuncion() |
-    LOOKAHEAD(<IDENTIFICADOR> <ASIGNACION>)                Asignacion()     |
-    LOOKAHEAD(<IDENTIFICADOR> <ASIGNACION_SUMA>)           Asignacion()     |
-    LOOKAHEAD(<IDENTIFICADOR> <ASIGNACION_RESTA>)          Asignacion()     |
-    LOOKAHEAD(<IDENTIFICADOR> <ASIGNACION_MULTIPLICACION>) Asignacion()     |
-    LOOKAHEAD(<IDENTIFICADOR> <ASIGNACION_DIVISION>)       Asignacion()
-}
-
-void SentenciaCiclo():{}
-{
-    LOOKAHEAD(<ROMPER>)    <ROMPER>    <DELIMITADOR> { System.out.println("Sintaxis Correcta: romper"); }    |
-    LOOKAHEAD(<CONTINUAR>) <CONTINUAR> <DELIMITADOR> { System.out.println("Sintaxis Correcta: continuar"); } |
-    Sentencia()
-}
-
-void CuerpoCiclo():{}
-{
-    (SentenciaCiclo())+
+    LOOKAHEAD(3) Declaracion()        |
+    LOOKAHEAD(4) AsignacionFuncion()  |
+    LOOKAHEAD(2) Asignacion()         |
+    Condicional ()                    |
+    Ciclo ()                          |
+    DefFuncion ()                     |
+    LlamadaFuncion()                  |
+    Imprimir ()                       |
+    Retornar()
 }
 
 void Declaracion():{}
 {
     <VARIABLE> TipoDato() <IDENTIFICADOR>
     (
+        <ASIGNACION> Expresion() <DELIMITADOR>  |
+        (<COMA> <IDENTIFICADOR>)+ <DELIMITADOR> |
         <DELIMITADOR>
-        { System.out.println("Sintaxis Correcta: Declaracion Simple"); }
-        |
-        <ASIGNACION> ValorVariable() <DELIMITADOR>
-        { System.out.println("Sintaxis Correcta: Declaracion con Asignacion"); }
-        |
-        <COMA> <IDENTIFICADOR> (<COMA> <IDENTIFICADOR>)* <DELIMITADOR>
-        { System.out.println("Sintaxis Correcta: Declaracion Multiple"); }
     )
+    {System.out.println("Sintaxis Correcta: Declaracion");}
 }
 
 void Asignacion():{}
 {
     <IDENTIFICADOR>
-    (<ASIGNACION> | <ASIGNACION_SUMA> | <ASIGNACION_RESTA> |
-     <ASIGNACION_MULTIPLICACION> | <ASIGNACION_DIVISION>)
-    ExpresionAritmetica() <DELIMITADOR>
-    { System.out.println("Sintaxis Correcta: Asignacion"); }
-}
-
-void TipoDato():{}
-{
-    <ENTERO> | <DECIMAL> | <CHAR> | <BOOLEANO> | <CADENA>
-}
-
-void ValorVariable():{}
-{
-    <VALOR_CADENA> | <VALOR_NUMERO> | <VERDADERO> | <FALSO> | <IDENTIFICADOR>
-}
-
-void ExpresionLogica():{}
-{
-    LOOKAHEAD(<NOT>)
-    <NOT> ExpresionLogica()
-    |
-    LOOKAHEAD(<VERDADERO>)
-    <VERDADERO>
-    |
-    LOOKAHEAD(<FALSO>)
-    <FALSO>
-    |
-    ExpresionRelacional() ((<AND> | <OR>) ExpresionRelacional())*
-}
-
-void ExpresionRelacional():{}
-{
-    ExpresionAritmetica()
     (
-        (<IGUAL_QUE> | <DIFERENTE_DE> | <MAYOR_QUE> | <MENOR_QUE> |
-         <MAYOR_IGUAL> | <MENOR_IGUAL>)
-        ExpresionAritmetica()
-    )?
-}
-
-void ExpresionAritmetica():{}
-{
-    Termino() ((<SUMA> | <RESTA>) Termino())*
-}
-
-void Termino():{}
-{
-    Factor() ((<MULTIPLICACION> | <DIVISION> | <MODULO> | <POTENCIA>) Factor())*
-}
-
-void Factor():{}
-{
-    LOOKAHEAD(<PAREN_ABRE>)
-    <PAREN_ABRE> ExpresionAritmetica() <PAREN_CIERRA>
-    |
-    LOOKAHEAD(<VALOR_NUMERO>) <VALOR_NUMERO>
-    |
-    LOOKAHEAD(<VALOR_CADENA>) <VALOR_CADENA>
-    |
-    LOOKAHEAD(<VERDADERO>)    <VERDADERO>
-    |
-    LOOKAHEAD(<FALSO>)        <FALSO>
-    |
-    <IDENTIFICADOR>
+        <ASIGNACION>                |
+        <ASIGNACION_SUMA>           |
+        <ASIGNACION_RESTA>          |
+        <ASIGNACION_MULTIPLICACION> |
+        <ASIGNACION_DIVISION>       |
+        <ASIGNACION_MODULO>
+    )
+    ExpresionLogica() <DELIMITADOR>
+    {System.out.println("Sintaxis Correcta: Asignacion detectada");}
 }
 
 void Condicional():{}
 {
     <SI> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA>
-    <LLAVE_ABRE> (SentenciaCiclo())* <LLAVE_CIERRA>
-    { System.out.println("Sintaxis Correcta: si"); }
+    <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
+    {System.out.println("Sintaxis Correcta: Bloque SI");}
     (
-        LOOKAHEAD(<SINO_SI>) CadenaSinoSi() |
-        LOOKAHEAD(<SINO>)
-        <SINO> <LLAVE_ABRE> (SentenciaCiclo())* <LLAVE_CIERRA>
-        { System.out.println("Sintaxis Correcta: sino"); }
+        LOOKAHEAD(2) <SINO_SI> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA>
+        <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
+        {System.out.println("Sintaxis Correcta: Bloque SINO SI");}
+    )*
+    (
+        LOOKAHEAD(1) <SINO>
+        <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
+        {System.out.println("Sintaxis Correcta: Bloque SINO");}
     )?
 }
 
-void CadenaSinoSi():{}
+void Ciclo():{}
 {
-    <SINO_SI> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA>
-    <LLAVE_ABRE> (SentenciaCiclo())* <LLAVE_CIERRA>
-    { System.out.println("Sintaxis Correcta: sino_si"); }
-    (
-        LOOKAHEAD(<SINO_SI>) CadenaSinoSi() |
-        LOOKAHEAD(<SINO>)
-        <SINO> <LLAVE_ABRE> (SentenciaCiclo())* <LLAVE_CIERRA>
-        { System.out.println("Sintaxis Correcta: sino final"); }
-    )?
+    Mientras()      |
+    HacerMientras() |
+    Para()
 }
 
-void Mientras():{}
+void DefFuncion():{}
+{
+    <FUNCION> <IDENTIFICADOR> <PAREN_ABRE>
+    (ListaParametros())?
+    <PAREN_CIERRA>
+    <LLAVE_ABRE>
+    (Sentencia())*
+    <LLAVE_CIERRA>
+    {System.out.println("Sintaxis Correcta: Definicion de Funcion");}
+}
+
+void LlamadaFuncion():{}
+{
+    <IDENTIFICADOR> <PAREN_ABRE>
+    (ListaArgumentos())?
+    <PAREN_CIERRA>
+    (
+        <DELIMITADOR>
+        {System.out.println("Sintaxis Correcta: Llamada a Funcion");}
+    )
+}
+
+void Imprimir():{}
+{
+    <IMPRIMIR> <PAREN_ABRE>
+    (ExpresionLogica())?
+    <PAREN_CIERRA> <DELIMITADOR>
+    {System.out.println("Sintaxis Correcta: Sentencia Imprimir");}
+}
+
+void Retornar():{}
+{
+    <RETORNAR>
+    (
+        LOOKAHEAD(2)
+        ExpresionLogica()
+        {System.out.println("Sintaxis Correcta: Retornar con Valor");}
+    )?
+    {System.out.println("Sintaxis Correcta: Retorno Simple");}
+    <DELIMITADOR>
+}
+
+//Reglas de la Estructura Principal
+
+void TipoDato():{}
+{
+    <ENTERO> | <DECIMAL> | <BOOLEANO> | <CADENA> | <CHAR>
+}
+
+void Expresion():{}
+{
+    ExpresionLogica()
+}
+
+void ExpresionLogica():{}
+{
+    ExpresionRelacional() ((<AND> | <OR>)ExpresionRelacional())*
+}
+
+void ExpresionRelacional(): {}
+{
+    ExpresionAritmetica() ((<IGUAL_QUE> | <DIFERENTE_DE> | <MAYOR_QUE> |<MENOR_QUE> | <MAYOR_IGUAL> | <MENOR_IGUAL> ) ExpresionAritmetica())?
+}
+
+void ExpresionAritmetica():{}
+{
+    Termino() ((<SUMA> | <RESTA> ) Termino())*
+}
+
+void Termino():{}
+{
+    Potencia() ((<MULTIPLICACION> | <DIVISION> | <MODULO> ) Potencia())*
+}
+
+void Potencia():{}
+{
+    Factor() (<POTENCIA> Factor())*
+}
+
+void Factor():{} {
+    LOOKAHEAD(2) LlamadaFuncionAsignacion()       |
+    <NOT> Factor()                                |
+    <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA> |
+    <VALOR_NUMERO>                                |
+    <VALOR_CADENA>                                |
+    <VERDADERO>                                   |
+    <FALSO>                                       |
+    <IDENTIFICADOR>                               |
+    <LEER> <PAREN_ABRE> (<VALOR_CADENA>)? <PAREN_CIERRA>
+}
+
+void Mientras(): {}
 {
     <MIENTRAS> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA>
-    <LLAVE_ABRE> CuerpoCiclo() <LLAVE_CIERRA>
-    { System.out.println("Sintaxis Correcta: mientras"); }
+    <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
+    {System.out.println("Sintaxis Correcta: Ciclo MIENTRAS");}
 }
 
 void HacerMientras():{}
 {
-    <HACER> <LLAVE_ABRE> CuerpoCiclo() <LLAVE_CIERRA>
+    <HACER> <LLAVE_ABRE> (Sentencia())*<LLAVE_CIERRA>
     <MIENTRAS> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA> <DELIMITADOR>
-    { System.out.println("Sintaxis Correcta: hacer_mientras"); }
+    {System.out.println("Sintaxis Correcta: Ciclo HACER - MIENTRAS");}
 }
 
 void Para():{}
@@ -225,80 +275,67 @@ void Para():{}
     <PARA> <PAREN_ABRE>
         InicioPara() <DELIMITADOR>
         ExpresionLogica() <DELIMITADOR>
-        Actualizacion()
+        ActualizacionPara()
     <PAREN_CIERRA>
-    <LLAVE_ABRE> CuerpoCiclo() <LLAVE_CIERRA>
-    { System.out.println("Sintaxis Correcta: para"); }
+    <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
+    {System.out.println("Sintaxis Correcta: Ciclo PARA");}
 }
 
 void InicioPara():{}
 {
-    LOOKAHEAD(<VARIABLE>)
-    <VARIABLE> TipoDato() <IDENTIFICADOR> <ASIGNACION> ValorVariable()
-    |
-    <IDENTIFICADOR> <ASIGNACION> ValorVariable()
+    LOOKAHEAD(3) DeclaracionPara() | AsignacionPara()
 }
 
-void Actualizacion():{}
+void DeclaracionPara():{}
+{
+    <VARIABLE> TipoDato() <IDENTIFICADOR> <ASIGNACION> ExpresionAritmetica()
+}
+
+void AsignacionPara():{}
+{
+    <IDENTIFICADOR> <ASIGNACION> ExpresionAritmetica()
+}
+
+void ActualizacionPara():{}
 {
     <IDENTIFICADOR>
-    (<ASIGNACION> | <ASIGNACION_SUMA> | <ASIGNACION_RESTA> |
-     <ASIGNACION_MULTIPLICACION> | <ASIGNACION_DIVISION>)
+    (
+        <ASIGNACION_SUMA>           |
+        <ASIGNACION_RESTA>          |
+        <ASIGNACION_MULTIPLICACION> |
+        <ASIGNACION_DIVISION>       |
+        <ASIGNACION_MODULO>         |
+        <ASIGNACION>
+    )
     ExpresionAritmetica()
 }
 
-void DefFuncion():{}
+void ListaArgumentos():{}
 {
-    <FUNCION> <IDENTIFICADOR> <PAREN_ABRE>
-    (LOOKAHEAD(2) ListaParams())?
-    <PAREN_CIERRA>
-    <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
-    { System.out.println("Sintaxis Correcta: def-funcion"); }
+    Argumento() (<COMA> Argumento())*
 }
 
-void ListaParams():{}
+void Argumento(): {}
 {
-    Param() (<COMA> Param())*
+    ExpresionLogica()
 }
 
-void Param():{}
+void ListaParametros():{}
+{
+    Parametro() (<COMA> Parametro())*
+}
+
+void Parametro(): {}
 {
     TipoDato() <IDENTIFICADOR>
 }
 
-void LlamadaFuncion():{}
-{
-    <IDENTIFICADOR> <PAREN_ABRE>
-    (LOOKAHEAD(2) ListaArgs())?
-    <PAREN_CIERRA> <DELIMITADOR>
-    { System.out.println("Sintaxis Correcta: llamada-funcion"); }
+void AsignacionFuncion():{} {
+    <IDENTIFICADOR> <ASIGNACION> LlamadaFuncionAsignacion() <DELIMITADOR>
+    {System.out.println("Sintaxis Correcta: Asignacion de Funcion");}
 }
 
-void ListaArgs():{}
+void LlamadaFuncionAsignacion():{}
 {
-    ExpresionAritmetica() (<COMA> ExpresionAritmetica())*
-}
-
-void Retornar():{}
-{
-    <RETORNAR>
-    (
-        LOOKAHEAD(2) ExpresionAritmetica() <DELIMITADOR>
-        { System.out.println("Sintaxis Correcta: retornar valor"); }
-        |
-        <DELIMITADOR>
-        { System.out.println("Sintaxis Correcta: retornar"); }
-    )
-}
-
-void Imprimir():{}
-{
-    <IMPRIMIR> <PAREN_ABRE> ValorVariable() <PAREN_CIERRA> <DELIMITADOR>
-    { System.out.println("Sintaxis Correcta: imprimir"); }
-}
-
-void Leer():{}
-{
-    <LEER> <PAREN_ABRE> <IDENTIFICADOR> <PAREN_CIERRA> <DELIMITADOR>
-    { System.out.println("Sintaxis Correcta: leer"); }
+    <IDENTIFICADOR> <PAREN_ABRE> (ListaArgumentos())? <PAREN_CIERRA>
 }
