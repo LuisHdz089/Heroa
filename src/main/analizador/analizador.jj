@@ -1,32 +1,46 @@
-
 PARSER_BEGIN(Heroa)
 import java.io.*;
 
 public class Heroa {
-    public static void main(String[] args){
-      try{
-          InputStream input = new FileInputStream("prueba.txt");
-          Heroa analizador = new Heroa(input);
-          analizador.Programa();
-          System.out.println("Análisis Sintáctico terminado con éxito.");
-      } catch (FileNotFoundException e){
-          System.out.println("Error: El archivo 'prueba.txt' no existe.");
-      } catch (ParseException e){
-          System.err.println("Error Sintáctico: " + e.getMessage());
-      } catch (TokenMgrError e){
-          System.err.println("Error Léxico detectado: " + e.getMessage());
-      }
+
+    static int totalErrores = 0;
+
+    public static void main(String[] args) {
+        try {
+            InputStream input = new FileInputStream("prueba.txt");
+            Heroa analizador = new Heroa(input);
+            analizador.Programa();
+
+            System.out.println("\n--- Análisis finalizado: " + totalErrores + " error(es) encontrado(s). ---");
+
+        } catch (FileNotFoundException e) {
+            System.out.println("Error: El archivo 'prueba.txt' no existe.");
+        } catch (ParseException e) {
+            int linea = (e.currentToken != null && e.currentToken.next != null)
+                        ? e.currentToken.next.beginLine : -1;
+            System.out.println("Error Sintáctico | Línea " + linea
+                + " [global]: token inesperado '" + e.currentToken.next.image + "'");
+            totalErrores++;
+        } catch (TokenMgrError e) {
+            System.out.println("Error Léxico fatal: " + e.getMessage());
+            totalErrores++;
+        }
     }
 }
 PARSER_END(Heroa)
 
+// ─────────────────────────────────────────────
+//  SKIP: espacios, saltos y COMENTARIOS
+//  Línea:   \\\
+//  Bloque:  *\ ... \*
+// ─────────────────────────────────────────────
 SKIP : {
     " "
   | "\r"
   | "\t"
   | "\n"
-  | <"\\\\\\" (~["\n", "\r"])* ("\n" | "\r" | "\r\n")?>   // Comentario de línea: \\\
-  | "*\\" : IN_MULTILINE_COMMENT                         // Inicio bloque: *\
+  | <"\\\\\\" (~["\n", "\r"])* ("\n" | "\r" | "\r\n")?>
+  | "*\\" : IN_MULTILINE_COMMENT
 }
 
 <IN_MULTILINE_COMMENT> SKIP : {
@@ -34,8 +48,10 @@ SKIP : {
   | <~[]>
 }
 
-TOKEN :{
-    // Palabras reservadas
+// ─────────────────────────────────────────────
+//  TOKENS
+// ─────────────────────────────────────────────
+TOKEN : {
     <PRINCIPAL: "Principal">  |
     <SI: "si">                |
     <SINO: "sino">            |
@@ -52,13 +68,11 @@ TOKEN :{
     <FALSO: "falso">          |
     <IMPRIMIR: "imprimir">    |
     <LEER: "leer">            |
-    // Tipos de dato
-    <ENTERO: "entero">     |
-    <DECIMAL: "decimal">   |
-    <CHAR: "caracter">     |
-    <BOOLEANO: "booleano"> |
-    <CADENA: "cadena">     |
-    // Operadores (los más largos primero)
+    <ENTERO: "entero">        |
+    <DECIMAL: "decimal">      |
+    <CHAR: "caracter">        |
+    <BOOLEANO: "booleano">    |
+    <CADENA: "cadena">        |
     <POTENCIA: "**">                  |
     <AND: "&&">                       |
     <OR: "|||">                       |
@@ -71,7 +85,6 @@ TOKEN :{
     <ASIGNACION_MULTIPLICACION: "=*"> |
     <ASIGNACION_DIVISION: "=/">       |
     <ASIGNACION_MODULO: "=%">         |
-    //Operadores Simples
     <MAYOR_QUE: ">">      |
     <MENOR_QUE: "<">      |
     <SUMA: "+">           |
@@ -81,14 +94,12 @@ TOKEN :{
     <MODULO: "%">         |
     <NOT: "!">            |
     <ASIGNACION: "=">     |
-    // Puntuacion
-    <LLAVE_ABRE: "{">   |
-    <LLAVE_CIERRA: "}"> |
-    <PAREN_ABRE: "(">   |
-    <PAREN_CIERRA: ")"> |
-    <DELIMITADOR: ";">  |
-    <COMA: ",">         |
-    // Identificadores y valores
+    <LLAVE_ABRE: "{">     |
+    <LLAVE_CIERRA: "}">   |
+    <PAREN_ABRE: "(">     |
+    <PAREN_CIERRA: ")">   |
+    <DELIMITADOR: ";">    |
+    <COMA: ",">           |
     <IDENTIFICADOR: <MINUSCULA> (<RESTO_IDENTIFICADOR>)*> |
     <#MINUSCULA: ["a"-"z"]>                               |
     <#MAYUSCULA: ["A"-"Z"]>                               |
@@ -100,34 +111,144 @@ TOKEN :{
     <VALOR_NUMERO: (["0"-"9"])+ ("." (["0"-"9"])+)?>
 }
 
-//Estructura Principal
-
-void Programa():{}
-{
-    (DefFuncion())* Principal() (DefFuncion())* <EOF>
-    {System.out.println("Sintaxis Correcta: Programa completo");}
+// ─────────────────────────────────────────────
+//  Carácter no reconocido: se reporta con línea
+//  exacta y el análisis continúa.
+//  Debe estar AL FINAL de todas las reglas TOKEN.
+// ─────────────────────────────────────────────
+TOKEN : {
+    <ERROR_LEXICO: ~[]>
+    {
+        System.out.println("Error en linea " + matchedToken.beginLine 
+            + " [Léxico]: símbolo '" + image + "' no pertenece al alfabeto de HEROA.");
+        Heroa.totalErrores++;
+    }
 }
 
-void Principal():{}
-{
-    <PRINCIPAL> <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
-    {System.out.println("Sintaxis Correcta: Bloque Principal");}
+// ─────────────────────────────────────────────
+//  RECUPERACIÓN DE ERRORES
+//
+//  Regla clave: al llegar a '}', NO lo consumimos.
+//  Lo dejamos en el flujo para que Principal() pueda
+//  cerrarse correctamente y el análisis continúe
+//  con las sentencias que siguen.
+//
+//  Al llegar a ';', sí lo consumimos (es basura).
+// ─────────────────────────────────────────────
+JAVACODE
+void reporteErrores(ParseException e, String regla) {
+    Token t = e.currentToken.next; 
+
+    // 1. Imprimir el error sintáctico (si no es léxico)
+    if (t.kind != ERROR_LEXICO) {
+        StringBuilder sugerencia = new StringBuilder();
+        for (int i = 0; i < e.expectedTokenSequences.length; i++) {
+            for (int j = 0; j < e.expectedTokenSequences[i].length; j++) {
+                String esperado = e.tokenImage[e.expectedTokenSequences[i][j]];
+                if (sugerencia.indexOf(esperado) < 0) {
+                    sugerencia.append(esperado).append(" ");
+                }
+            }
+        }
+        
+        System.out.println("Error en linea " + t.beginLine 
+            + " [Sintáctico]: error en el token '" + t.image 
+            + "'; se esperaba " + sugerencia.toString().trim() + " después de este token.");
+            
+        Heroa.totalErrores++;
+    }
+
+    // 2. SINCRONIZACIÓN INTELIGENTE (Balance de Llaves)
+    int balanceLlaves = 0;
+    
+    while (true) {
+        Token tok = getToken(1);
+        if (tok.kind == EOF) break;
+
+        if (tok.kind == LLAVE_ABRE) {
+            balanceLlaves++;
+        } else if (tok.kind == LLAVE_CIERRA) {
+            if (balanceLlaves > 0) {
+                balanceLlaves--;
+            } else {
+                // Es una llave de cierre de un bloque superior. ¡No la tocamos!
+                break;
+            }
+        } else if (tok.kind == DELIMITADOR && balanceLlaves == 0) {
+            // Punto y coma a nivel base. ¡Ancla perfecta!
+            break; 
+        }
+
+        getNextToken(); // Consumimos la basura
+        
+        // Si acabamos de consumir la llave que cerró nuestro propio bloque fallido, terminamos
+        if (tok.kind == LLAVE_CIERRA && balanceLlaves == 0) {
+            break;
+        }
+    }
+
+    // 3. Limpiar el delimitador final
+    if (getToken(1).kind == DELIMITADOR) {
+        getNextToken();
+    }
 }
 
-void Sentencia(): {}
+// ═════════════════════════════════════════════
+//  GRAMÁTICA
+// ═════════════════════════════════════════════
+
+void Programa() : {}
 {
-    LOOKAHEAD(3) Declaracion()        |
-    LOOKAHEAD(4) AsignacionFuncion()  |
-    LOOKAHEAD(2) Asignacion()         |
-    Condicional ()                    |
-    Ciclo ()                          |
-    DefFuncion ()                     |
-    LlamadaFuncion()                  |
-    Imprimir ()                       |
-    Retornar()
+    try {
+        (DefFuncion())* Principal() (DefFuncion())* <EOF>
+    } catch (ParseException e) {
+        reporteErrores(e, "Global");
+        
+        // EL PARCHE ANTIBUCLES: Si el ancla que nos detuvo fue una llave, la consumimos.
+        if (getToken(1).kind == LLAVE_CIERRA) {
+            getNextToken(); 
+        }
+        
+        // Continuamos analizando el resto del archivo
+        if (getToken(1).kind != EOF) {
+            Programa(); 
+        }
+    }
 }
 
-void Declaracion():{}
+void Principal() : {}
+{
+    <PRINCIPAL> <LLAVE_ABRE>
+        (Sentencia())*
+    <LLAVE_CIERRA>
+}
+
+// Punto de recuperación principal.
+// Cada sentencia inválida es atrapada aquí,
+// reportada con su línea exacta, y el parser
+// continúa con la siguiente sentencia.
+void Sentencia() : {}
+{
+    try {
+        LOOKAHEAD(3) Declaracion()       |
+        LOOKAHEAD(4) AsignacionFuncion() |
+        LOOKAHEAD(2) Asignacion()        |
+        Condicional()                    |
+        Ciclo()                          |
+        DefFuncion()                     |
+        LlamadaFuncion()                 |
+        Imprimir()                       |
+        Retornar()
+    } catch (ParseException e) {
+        reporteErrores(e, "Sentencia");
+    }
+}
+
+// ─────────────────────────────────────────────
+//  DECLARACIONES Y ASIGNACIONES
+// ─────────────────────────────────────────────
+
+void Declaracion() : {}
 {
     <VARIABLE> TipoDato() <IDENTIFICADOR>
     (
@@ -135,10 +256,9 @@ void Declaracion():{}
         (<COMA> <IDENTIFICADOR>)+ <DELIMITADOR> |
         <DELIMITADOR>
     )
-    {System.out.println("Sintaxis Correcta: Declaracion");}
 }
 
-void Asignacion():{}
+void Asignacion() : {}
 {
     <IDENTIFICADOR>
     (
@@ -150,139 +270,57 @@ void Asignacion():{}
         <ASIGNACION_MODULO>
     )
     ExpresionLogica() <DELIMITADOR>
-    {System.out.println("Sintaxis Correcta: Asignacion detectada");}
 }
 
-void Condicional():{}
+void AsignacionFuncion() : {}
+{
+    <IDENTIFICADOR> <ASIGNACION> LlamadaFuncionInterna() <DELIMITADOR>
+}
+
+// ─────────────────────────────────────────────
+//  CONDICIONALES
+// ─────────────────────────────────────────────
+
+void Condicional() : {}
 {
     <SI> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA>
     <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
-    {System.out.println("Sintaxis Correcta: Bloque SI");}
     (
-        LOOKAHEAD(2) <SINO_SI> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA>
+        LOOKAHEAD(2)
+        <SINO_SI> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA>
         <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
-        {System.out.println("Sintaxis Correcta: Bloque SINO SI");}
     )*
     (
-        LOOKAHEAD(1) <SINO>
+        LOOKAHEAD(1)
+        <SINO>
         <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
-        {System.out.println("Sintaxis Correcta: Bloque SINO");}
     )?
 }
 
-void Ciclo():{}
+// ─────────────────────────────────────────────
+//  CICLOS
+// ─────────────────────────────────────────────
+
+void Ciclo() : {}
 {
     Mientras()      |
     HacerMientras() |
     Para()
 }
 
-void DefFuncion():{}
-{
-    <FUNCION> <IDENTIFICADOR> <PAREN_ABRE>
-    (ListaParametros())?
-    <PAREN_CIERRA>
-    <LLAVE_ABRE>
-    (Sentencia())*
-    <LLAVE_CIERRA>
-    {System.out.println("Sintaxis Correcta: Definicion de Funcion");}
-}
-
-void LlamadaFuncion():{}
-{
-    <IDENTIFICADOR> <PAREN_ABRE>
-    (ListaArgumentos())?
-    <PAREN_CIERRA>
-    (
-        <DELIMITADOR>
-        {System.out.println("Sintaxis Correcta: Llamada a Funcion");}
-    )
-}
-
-void Imprimir():{}
-{
-    <IMPRIMIR> <PAREN_ABRE>
-    (ExpresionLogica())?
-    <PAREN_CIERRA> <DELIMITADOR>
-    {System.out.println("Sintaxis Correcta: Sentencia Imprimir");}
-}
-
-void Retornar():{}
-{
-    <RETORNAR>
-    (
-        LOOKAHEAD(2)
-        ExpresionLogica()
-        {System.out.println("Sintaxis Correcta: Retornar con Valor");}
-    )?
-    {System.out.println("Sintaxis Correcta: Retorno Simple");}
-    <DELIMITADOR>
-}
-
-//Reglas de la Estructura Principal
-
-void TipoDato():{}
-{
-    <ENTERO> | <DECIMAL> | <BOOLEANO> | <CADENA> | <CHAR>
-}
-
-void Expresion():{}
-{
-    ExpresionLogica()
-}
-
-void ExpresionLogica():{}
-{
-    ExpresionRelacional() ((<AND> | <OR>)ExpresionRelacional())*
-}
-
-void ExpresionRelacional(): {}
-{
-    ExpresionAritmetica() ((<IGUAL_QUE> | <DIFERENTE_DE> | <MAYOR_QUE> |<MENOR_QUE> | <MAYOR_IGUAL> | <MENOR_IGUAL> ) ExpresionAritmetica())?
-}
-
-void ExpresionAritmetica():{}
-{
-    Termino() ((<SUMA> | <RESTA> ) Termino())*
-}
-
-void Termino():{}
-{
-    Potencia() ((<MULTIPLICACION> | <DIVISION> | <MODULO> ) Potencia())*
-}
-
-void Potencia():{}
-{
-    Factor() (<POTENCIA> Factor())*
-}
-
-void Factor():{} {
-    LOOKAHEAD(2) LlamadaFuncionAsignacion()       |
-    <NOT> Factor()                                |
-    <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA> |
-    <VALOR_NUMERO>                                |
-    <VALOR_CADENA>                                |
-    <VERDADERO>                                   |
-    <FALSO>                                       |
-    <IDENTIFICADOR>                               |
-    <LEER> <PAREN_ABRE> (<VALOR_CADENA>)? <PAREN_CIERRA>
-}
-
-void Mientras(): {}
+void Mientras() : {}
 {
     <MIENTRAS> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA>
     <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
-    {System.out.println("Sintaxis Correcta: Ciclo MIENTRAS");}
 }
 
-void HacerMientras():{}
+void HacerMientras() : {}
 {
-    <HACER> <LLAVE_ABRE> (Sentencia())*<LLAVE_CIERRA>
+    <HACER> <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
     <MIENTRAS> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA> <DELIMITADOR>
-    {System.out.println("Sintaxis Correcta: Ciclo HACER - MIENTRAS");}
 }
 
-void Para():{}
+void Para() : {}
 {
     <PARA> <PAREN_ABRE>
         InicioPara() <DELIMITADOR>
@@ -290,25 +328,24 @@ void Para():{}
         ActualizacionPara()
     <PAREN_CIERRA>
     <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
-    {System.out.println("Sintaxis Correcta: Ciclo PARA");}
 }
 
-void InicioPara():{}
+void InicioPara() : {}
 {
     LOOKAHEAD(3) DeclaracionPara() | AsignacionPara()
 }
 
-void DeclaracionPara():{}
+void DeclaracionPara() : {}
 {
     <VARIABLE> TipoDato() <IDENTIFICADOR> <ASIGNACION> ExpresionAritmetica()
 }
 
-void AsignacionPara():{}
+void AsignacionPara() : {}
 {
     <IDENTIFICADOR> <ASIGNACION> ExpresionAritmetica()
 }
 
-void ActualizacionPara():{}
+void ActualizacionPara() : {}
 {
     <IDENTIFICADOR>
     (
@@ -322,32 +359,120 @@ void ActualizacionPara():{}
     ExpresionAritmetica()
 }
 
-void ListaArgumentos():{}
+// ─────────────────────────────────────────────
+//  FUNCIONES
+// ─────────────────────────────────────────────
+
+void DefFuncion() : {}
 {
-    Argumento() (<COMA> Argumento())*
+    <FUNCION> <IDENTIFICADOR> <PAREN_ABRE>
+    (ListaParametros())?
+    <PAREN_CIERRA>
+    <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
 }
 
-void Argumento(): {}
+void LlamadaFuncion() : {}
 {
-    ExpresionLogica()
+    <IDENTIFICADOR> <PAREN_ABRE>
+    (ListaArgumentos())?
+    <PAREN_CIERRA> <DELIMITADOR>
 }
 
-void ListaParametros():{}
+void LlamadaFuncionInterna() : {}
+{
+    <IDENTIFICADOR> <PAREN_ABRE> (ListaArgumentos())? <PAREN_CIERRA>
+}
+
+void ListaParametros() : {}
 {
     Parametro() (<COMA> Parametro())*
 }
 
-void Parametro(): {}
+void Parametro() : {}
 {
     TipoDato() <IDENTIFICADOR>
 }
 
-void AsignacionFuncion():{} {
-    <IDENTIFICADOR> <ASIGNACION> LlamadaFuncionAsignacion() <DELIMITADOR>
-    {System.out.println("Sintaxis Correcta: Asignacion de Funcion");}
+void ListaArgumentos() : {}
+{
+    Argumento() (<COMA> Argumento())*
 }
 
-void LlamadaFuncionAsignacion():{}
+void Argumento() : {}
 {
-    <IDENTIFICADOR> <PAREN_ABRE> (ListaArgumentos())? <PAREN_CIERRA>
+    ExpresionLogica()
+}
+
+// ─────────────────────────────────────────────
+//  ENTRADA Y SALIDA
+// ─────────────────────────────────────────────
+
+void Imprimir() : {}
+{
+    <IMPRIMIR> <PAREN_ABRE>
+    (ExpresionLogica())?
+    <PAREN_CIERRA> <DELIMITADOR>
+}
+
+void Retornar() : {}
+{
+    <RETORNAR>
+    (LOOKAHEAD(2) ExpresionLogica())?
+    <DELIMITADOR>
+}
+
+// ─────────────────────────────────────────────
+//  TIPOS Y JERARQUÍA DE EXPRESIONES
+// ─────────────────────────────────────────────
+
+void TipoDato() : {}
+{
+    <ENTERO> | <DECIMAL> | <BOOLEANO> | <CADENA> | <CHAR>
+}
+
+void Expresion() : {}
+{
+    ExpresionLogica()
+}
+
+void ExpresionLogica() : {}
+{
+    ExpresionRelacional() ((<AND> | <OR>) ExpresionRelacional())*
+}
+
+void ExpresionRelacional() : {}
+{
+    ExpresionAritmetica()
+    (
+        (<IGUAL_QUE> | <DIFERENTE_DE> | <MAYOR_QUE> | <MENOR_QUE> | <MAYOR_IGUAL> | <MENOR_IGUAL>)
+        ExpresionAritmetica()
+    )?
+}
+
+void ExpresionAritmetica() : {}
+{
+    Termino() ((<SUMA> | <RESTA>) Termino())*
+}
+
+void Termino() : {}
+{
+    Potencia() ((<MULTIPLICACION> | <DIVISION> | <MODULO>) Potencia())*
+}
+
+void Potencia() : {}
+{
+    Factor() (<POTENCIA> Factor())*
+}
+
+void Factor() : {}
+{
+    LOOKAHEAD(2) LlamadaFuncionInterna()              |
+    <NOT> Factor()                                    |
+    <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA>     |
+    <VALOR_NUMERO>                                    |
+    <VALOR_CADENA>                                    |
+    <VERDADERO>                                       |
+    <FALSO>                                           |
+    <IDENTIFICADOR>                                   |
+    <LEER> <PAREN_ABRE> (<VALOR_CADENA>)? <PAREN_CIERRA>
 }

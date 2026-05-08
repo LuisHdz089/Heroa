@@ -1,62 +1,23 @@
-Principal{
-    variable cadena armando = "HOLA";
-    variable entero opcion = 0;
-    variable entero n = 0;
-    variable entero i = 0;
-    variable entero resultado = 0;
-    variable booleano correcto = verdadero;
+Principal {
+    \\\ Error 1: Léxico y Sintáctico (Anclado con ;) [cite: 254]
+    variable entero Pvalor = 500; 
 
-    imprimir("=== MENU ===");
-    imprimir("1. Factorial");
-    imprimir("2. Suma de naturales");
-    imprimir("3. Tabla de multiplicar");
-    opcion = leer("Elige una opcion: ");
-
-    si(opcion == 1){
-        n = leer("Ingresa un numero: ");
-        resultado = factorial(n);
-        imprimir("El factorial es:");
-        imprimir(resultado);
-    }sino_si(opcion == 2){
-        n = leer("Ingresa hasta que numero: ");
-        resultado = sumaHasta(n);
-        imprimir("La suma es:");
-        imprimir(resultado);
-    }sino_si(opcion == 3){
-        n = leer("Ingresa el numero para la tabla: ");
-        tablaMultiplicar(n);
-    }sino{
-        imprimir("Opcion no valida");
-        correcto = falso;
+    \\\ Error 2: Falta el '(' (Anclado con { y }) [cite: 253, 254, 282]
+    si (edad >= 18 {
+        imprimir("Acceso");
     }
 
-    si(correcto == verdadero){
-        imprimir("Programa finalizado con exito");
-    }
-}
+    \\\ Error 3: Cadena mal formada PERO con ancla al final [cite: 254]
+    variable cadena mensaje = 'Error de comillas'; 
 
-funcion factorial(entero n){
-    variable entero resultado = 1;
-    para(variable entero i = 1; i <= n; i =+ 1){
-        resultado =* i;
+    \\\ Error 4: Ciclo incompleto (Anclado con { y }) [cite: 284]
+    para (variable entero i = 0, i < 5; i=+1) {
+        imprimir(i);
     }
-    retornar resultado;
-}
 
-funcion sumaHasta(entero n){
-    variable entero suma = 0;
-    para(variable entero i = 1; i <= n; i =+ 1){
-        suma =+ i;
-    }
-    retornar suma;
-}
+    \\\ Error 5: Identificador inválido (Anclado con ;) [cite: 254, 256]
+    variable decimal numero_decimal = 10.5;
 
-funcion tablaMultiplicar(entero n){
-    variable entero i = 0;
-    variable entero res = 0;
-    para(variable entero i = 1; i <= 10; i =+ 1){
-        res = n * i;
-        imprimir(res);
-    }
-    retornar;
+    \\\ Error 6: Impresión sin paréntesis (Anclado con ;) [cite: 254, 290]
+    imprimir "Final";
 }
