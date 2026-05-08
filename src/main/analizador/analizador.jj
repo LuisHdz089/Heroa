@@ -20,7 +20,19 @@ public class Heroa {
 }
 PARSER_END(Heroa)
 
-SKIP : {" "|"\r"|"\t"|"\n"}
+SKIP : {
+    " "
+  | "\r"
+  | "\t"
+  | "\n"
+  | <"\\\\\\" (~["\n", "\r"])* ("\n" | "\r" | "\r\n")?>   // Comentario de línea: \\\
+  | "*\\" : IN_MULTILINE_COMMENT                         // Inicio bloque: *\
+}
+
+<IN_MULTILINE_COMMENT> SKIP : {
+    "\\*" : DEFAULT
+  | <~[]>
+}
 
 TOKEN :{
     // Palabras reservadas
