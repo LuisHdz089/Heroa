@@ -1,23 +1,60 @@
+*\ 
+  ================================================
+  Archivo de prueba integral para el lenguaje HEROA
+  Valida: Declaraciones, Expresiones, Ciclos, 
+  Arreglos y Funciones independientes.
+  ================================================
+\*
+
+\\\ 2. Metodo Principal (Regla 618)
 Principal {
-    \\\ Error 1: Léxico y Sintáctico (Anclado con ;) [cite: 254]
-    variable entero Pvalor = 500; 
+    \\\ Declaraciones de variables (id-variable inicia en minuscula - Regla 627)
+    variable entero contador = 0;
+    variable cadena mensaje = "Iniciando calculos";
+    variable booleano bandera = verdadero;
+    
+    imprimir(mensaje);
 
-    \\\ Error 2: Falta el '(' (Anclado con { y }) [cite: 253, 254, 282]
-    si (edad >= 18 {
-        imprimir("Acceso");
+    \\\ 3. Arreglos y uso de leer() (Reglas 751, 753)
+    variable arreglo entero valores [3] = { 10, 20, 30 }; 
+    variable entero entrada = leer(); 
+
+    \\\ 4. Estructuras de Control: Condicionales (Regla 717-724)
+    si (entrada == 100) {
+        imprimir("Valor maximo alcanzado");
+    } sino_si (entrada > 50 && entrada < 100) {
+        imprimir("Valor aceptable");
+    } sino {
+        imprimir("Valor muy bajo");
     }
 
-    \\\ Error 3: Cadena mal formada PERO con ancla al final [cite: 254]
-    variable cadena mensaje = 'Error de comillas'; 
-
-    \\\ Error 4: Ciclo incompleto (Anclado con { y }) [cite: 284]
-    para (variable entero i = 0, i < 5; i=+1) {
-        imprimir(i);
+    \\\ 5. Ciclos: Mientras (Regla 733)
+    mientras (contador < MAX_INTENTOS) {
+        \\\ Llamada a funcion dentro de una operacion (Regla 679)
+        variable entero resultado_temp = calcular_area(valores[contador]) + 1;
+        
+        imprimir(resultado_temp);
+        
+        contador = contador + 1;
     }
 
-    \\\ Error 5: Identificador inválido (Anclado con ;) [cite: 254, 256]
-    variable decimal numero_decimal = 10.5;
+    \\\ 6. Ciclo Para (Regla 728)
+    para (variable entero i = 0; i < 3; i = i + 1) {
+        si (i == 2) {
+            romper;
+        }
+        imprimir(valores[i]);
+    }
+}
 
-    \\\ Error 6: Impresión sin paréntesis (Anclado con ;) [cite: 254, 290]
-    imprimir "Final";
+\\\ 7. Lista de Funciones fuera del principal (Regla 620)
+funcion calcular_area (entero radio) {
+    \\\ Uso de constante e identificador de variable en operacion
+    variable decimal area = PI * (radio * radio);
+    retornar area;
+}
+
+funcion finalizar_sistema () {
+    imprimir("Programa terminado con exito");
+    retornar;
 }
