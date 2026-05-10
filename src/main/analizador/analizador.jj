@@ -211,7 +211,7 @@ void reporteErrores(ParseException e, String regla) {
 void Programa() : {}
 {
     try {
-        (DefFuncion())* Principal() (DefFuncion())* <EOF>
+        Principal() (ListaFunciones())? <EOF>
     } catch (ParseException e) {
         reporteErrores(e, "Global");
         
@@ -229,30 +229,30 @@ void Programa() : {}
 
 void Principal() : {}
 {
-    <PRINCIPAL> <LLAVE_ABRE>
-        (Sentencia())*
-    <LLAVE_CIERRA>
+    <<PRINCIPAL><<LLAVE_ABRE> ListaSentencias() <<LLAVE_CIERRA>
 }
 
-// Punto de recuperación principal.
-// Cada sentencia inválida es atrapada aquí,
-// reportada con su línea exacta, y el parser
-// continúa con la siguiente sentencia.
+void ListaSentencias():{}
+{
+    Sentencia() (ListaSentencias())?
+}
+
+void ListaFunciones():{}
+{
+    DefFuncion() (ListaFunciones())?
+}
+
 void Sentencia() : {}
 {
     try {
-        LOOKAHEAD(3) DeclaracionArregloMatriz() |
-        LOOKAHEAD(3) Declaracion()              |
-        LOOKAHEAD(3) AsignacionArregloMatriz()  |
-        LOOKAHEAD(4) AsignacionFuncion()        |
-        LOOKAHEAD(2) Asignacion()               |
-        Condicional()                           |
-        Ciclo()                                 |
-        DefFuncion()                            |
-        LlamadaFuncion()                        |
-        Imprimir()                              |
-        Retornar()                              |
-        SentenciaSalto()                          
+        LOOKAHEAD(3) DeclaracionArregloMatriz()|
+        LOOKAHEAD(3) Declaracion()             |
+        LOOKAHEAD(3) AsignacionArregloMatriz() |
+        LOOKAHEAD(2) Asignacion()              |
+        EstructuraControl()                   |
+        LlamadaFuncion()                      |
+        Imprimir()                            |
+        SentenciasSaltos()                                             
     } catch (ParseException e) {
         reporteErrores(e, "Sentencia");
     }
@@ -264,33 +264,97 @@ void Sentencia() : {}
 
 void Declaracion() : {}
 {
-    <VARIABLE> TipoDato() <IDENTIFICADOR>
+    <CONSTANTE> TipoDato() <ID_CONSTANTE> <ASIGNACION> Valor() <DELIMITADOR> |
+    <VARIABLE> TipoDato()
     (
-        <ASIGNACION> Expresion() <DELIMITADOR>  |
-        (<COMA> <IDENTIFICADOR>)+ <DELIMITADOR> |
-        <DELIMITADOR>
-    )
+        LOOKAHEAD(2) <ID_VARIABLE> <ASIGNACION> Valor() <DELIMITADOR>
+        |
+        ListaIdsVariables() <DELIMITADOR>
+    ) 
+}
+
+void ListaIdsVariables() : {}
+{
+    <ID_VARIABLE> ( <COMA> ListaIdsVariables() )?
 }
 
 void Asignacion() : {}
 {
-    <IDENTIFICADOR>
-    (
-        <ASIGNACION>                |
-        <ASIGNACION_SUMA>           |
-        <ASIGNACION_RESTA>          |
-        <ASIGNACION_MULTIPLICACION> |
-        <ASIGNACION_DIVISION>       |
-        <ASIGNACION_MODULO>
-    )
-    ExpresionLogica() <DELIMITADOR>
+    <ID_VARIABLE> OperadorAsignacion() Valor() <DELIMITADOR>
 }
 
-void AsignacionFuncion() : {}
+void OperadorAsignacion():{}
 {
-    <IDENTIFICADOR> <ASIGNACION> LlamadaFuncionInterna() <DELIMITADOR>
+    <ASIGNACION>               |
+    <ASIGNACION_MULTIPLICACION>|
+    <ASIGNACION_DIVISION>      |
+    <ASIGNACION_MODULO>        |
+    <ASIGNACION_SUMA>          |
+    <ASIGNACION_RESTA>         |
 }
 
+// ─────────────────────────────────────────────
+//  EXPRESIONES
+// ─────────────────────────────────────────────
+
+void Valor():{}
+{
+    ExpLogica() 
+}
+
+void ExpLogica():{}
+{
+    TerminoLogico()(<OR> TerminoLogico())*
+}
+
+void TerminoLogico():{}
+{
+    FactorLogico() (<AND> FactorLogico())*
+}
+
+void FactorLogico():{}
+{
+    <NOT> FactorLogico()                               |
+    LOOKAHEAD("(" ExpLogica() ")") "(" ExpLogica() ")" |
+    ExpRelacional()
+}
+
+void ExpRelacional():{}
+{
+    ExpAritmetica() [OperadorRelacional() ExpAritmetica()]
+}
+
+void OperadorRelacional():{}
+{
+    <IGUAL_QUE>    |
+    <DIFERENTE_DE> |
+    <MAYOR_QUE>    |
+    <MENOR_QUE>    |
+    <MAYOR_IGUAL>  |
+    <MENOR_IGUAL>
+}
+
+void ExpAritmetica():{}
+{
+    TerminoAritmetico() ((<SUMA> | <RESTA>) TerminoAritmetico())*
+}
+
+void TerminoAritmetico():{}
+{
+    Potencia() ((<MULTIPLICACION> | <DIVISION> | <MODULO>) Potencia())*
+}
+
+void Potencia():{}
+{
+    Atomo() [<POTENCIA> Potencia()]
+}
+
+void Atomo():{}
+{
+    LOOKAHEAD(2) AccesoMatriz()|
+    LOOKAHEAD(2) AccesoArreglo()|
+    LOOKAHEAD(2) LlamadaFuncionInterna()|
+}
 // ─────────────────────────────────────────────
 //  CONDICIONALES
 // ─────────────────────────────────────────────
