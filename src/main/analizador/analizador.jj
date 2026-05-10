@@ -53,7 +53,7 @@ SKIP : {
 // ─────────────────────────────────────────────
 TOKEN : {
     //Palabras reservadas
-    <PRINCIPAL: "Principal">  |
+    <PRINCIPAL: "principal">  |
     <SI: "si">                |
     <SINO: "sino">            |
     <SINO_SI: "sino_si">      |
@@ -65,6 +65,7 @@ TOKEN : {
     <FUNCION: "funcion">      |
     <RETORNAR: "retornar">    |
     <VARIABLE: "variable">    |
+    <CONSTANTE: "constante">  |
     <VERDADERO: "verdadero">  |
     <FALSO: "falso">          |
     <IMPRIMIR: "imprimir">    |
@@ -107,13 +108,15 @@ TOKEN : {
     <CORCHETE_ABRE: "[">  |
     <CORCHETE_CIERRA: "]">|
     //Identificadores y literales
-    <IDENTIFICADOR: <MINUSCULA> (<RESTO_IDENTIFICADOR>)*> |
+    <ID_VARIABLE: <MINUSCULA>(<RESTO_ID_VARIABLE>)*>      |
+    <ID_CONSTANTE: <MAYUSCULA>(<RESTO_ID_CONSTANTE>)*>    |
     <#MINUSCULA: ["a"-"z"]>                               |
     <#MAYUSCULA: ["A"-"Z"]>                               |
     <#DIGITO: ["0"-"9"]>                                  |
     <#LETRA: <MINUSCULA> | <MAYUSCULA>>                   |
     <#CARACTER: <LETRA> | <DIGITO>>                       |
-    <#RESTO_IDENTIFICADOR: ("_")? <CARACTER>>             |
+    <#RESTO_ID_VARIABLE: ("_")? <CARACTER>>               |
+    <#RESTO_ID_CONSTANTE: ("_")? <MAYUSCULA>>             |
     <VALOR_CADENA: "\"" (~["\""])* "\"">                  |
     <VALOR_CHAR: "'" (~["'"]) "'">                        |
     <VALOR_NUMERO: (["0"-"9"])+ ("." (["0"-"9"])+)?>
