@@ -1,20 +1,26 @@
 PARSER_BEGIN(Heroa)
 import java.io.*;
+import java.util.*;
 
 public class Heroa {
 
     static int totalErrores = 0;
 
     public static void main(String[] args) {
+        String archivo = "";
         try {
-            InputStream input = new FileInputStream("prueba.txt");
+            Scanner sc = new Scanner(System.in);
+            System.out.print("Ingrese el nombre del archivo a analizar: ");
+            archivo = sc.nextLine();
+            InputStream input = new FileInputStream(archivo);
+            sc.close();
             Heroa analizador = new Heroa(input);
             analizador.Programa();
 
             System.out.println("\n--- Análisis finalizado: " + totalErrores + " error(es) encontrado(s). ---");
 
         } catch (FileNotFoundException e) {
-            System.out.println("Error: El archivo 'prueba.txt' no existe.");
+            System.out.println("Error: El archivo '" + archivo + "' no existe.");
         } catch (ParseException e) {
             int linea = (e.currentToken != null && e.currentToken.next != null)
                         ? e.currentToken.next.beginLine : -1;
@@ -28,12 +34,6 @@ public class Heroa {
     }
 }
 PARSER_END(Heroa)
-
-// ─────────────────────────────────────────────
-//  SKIP: espacios, saltos y COMENTARIOS
-//  Línea:   \\\
-//  Bloque:  *\ ... \*
-// ─────────────────────────────────────────────
 SKIP : {
     " "
   | "\r"
@@ -45,7 +45,7 @@ SKIP : {
 
 <IN_MULTILINE_COMMENT> SKIP : {
     "\\*" : DEFAULT
-  | <~[]>
+    | <~[]>
 }
 
 // ─────────────────────────────────────────────
@@ -76,6 +76,7 @@ TOKEN : {
     <BOOLEANO: "booleano">    |
     <CADENA: "cadena">        |
     <ARREGLO: "arreglo">      |
+    <MATRIX: "matriz">        |
     //Operadores
     <POTENCIA: "**">                  |
     <AND: "&&">                       |
@@ -122,35 +123,19 @@ TOKEN : {
     <VALOR_NUMERO: (["0"-"9"])+ ("." (["0"-"9"])+)?>
 }
 
-// ─────────────────────────────────────────────
-//  Carácter no reconocido: se reporta con línea
-//  exacta y el análisis continúa.
-//  Debe estar AL FINAL de todas las reglas TOKEN.
-// ─────────────────────────────────────────────
 TOKEN : {
     <ERROR_LEXICO: ~[]>
     {
         System.out.println("Error en linea " + matchedToken.beginLine 
+            + ", columna " + matchedToken.beginColumn 
             + " [Léxico]: símbolo '" + image + "' no pertenece al alfabeto de HEROA.");
         Heroa.totalErrores++;
     }
 }
 
-// ─────────────────────────────────────────────
-//  RECUPERACIÓN DE ERRORES
-//
-//  Regla clave: al llegar a '}', NO lo consumimos.
-//  Lo dejamos en el flujo para que Principal() pueda
-//  cerrarse correctamente y el análisis continúe
-//  con las sentencias que siguen.
-//
-//  Al llegar a ';', sí lo consumimos (es basura).
-// ─────────────────────────────────────────────
 JAVACODE
 void reporteErrores(ParseException e, String regla) {
     Token t = e.currentToken.next; 
-
-    // 1. Imprimir el error sintáctico (si no es léxico)
     if (t.kind != ERROR_LEXICO) {
         StringBuilder sugerencia = new StringBuilder();
         for (int i = 0; i < e.expectedTokenSequences.length; i++) {
@@ -161,15 +146,13 @@ void reporteErrores(ParseException e, String regla) {
                 }
             }
         }
-        
         System.out.println("Error en linea " + t.beginLine 
+            + ", columna " + t.beginColumn 
             + " [Sintáctico]: error en el token '" + t.image 
             + "'; se esperaba " + sugerencia.toString().trim() + " después de este token.");
             
         Heroa.totalErrores++;
     }
-
-    // 2. SINCRONIZACIÓN INTELIGENTE (Balance de Llaves)
     int balanceLlaves = 0;
     
     while (true) {
@@ -182,23 +165,16 @@ void reporteErrores(ParseException e, String regla) {
             if (balanceLlaves > 0) {
                 balanceLlaves--;
             } else {
-                // Es una llave de cierre de un bloque superior. ¡No la tocamos!
                 break;
             }
         } else if (tok.kind == DELIMITADOR && balanceLlaves == 0) {
-            // Punto y coma a nivel base. ¡Ancla perfecta!
             break; 
         }
-
-        getNextToken(); // Consumimos la basura
-        
-        // Si acabamos de consumir la llave que cerró nuestro propio bloque fallido, terminamos
+        getNextToken();
         if (tok.kind == LLAVE_CIERRA && balanceLlaves == 0) {
             break;
         }
     }
-
-    // 3. Limpiar el delimitador final
     if (getToken(1).kind == DELIMITADOR) {
         getNextToken();
     }
@@ -214,22 +190,20 @@ void Programa() : {}
         Principal() (ListaFunciones())? <EOF>
     } catch (ParseException e) {
         reporteErrores(e, "Global");
-        
-        // EL PARCHE ANTIBUCLES: Si el ancla que nos detuvo fue una llave, la consumimos.
-        if (getToken(1).kind == LLAVE_CIERRA) {
-            getNextToken(); 
+        Token t = getToken(1);
+        while (t.kind != FUNCION && t.kind != EOF) {
+            getNextToken();
+            t = getToken(1);
         }
-        
-        // Continuamos analizando el resto del archivo
-        if (getToken(1).kind != EOF) {
-            Programa(); 
+        if (t.kind == FUNCION) {
+            ListaFunciones();
         }
     }
 }
 
 void Principal() : {}
 {
-    <<PRINCIPAL><<LLAVE_ABRE> ListaSentencias() <<LLAVE_CIERRA>
+    <PRINCIPAL><LLAVE_ABRE> ListaSentencias() <LLAVE_CIERRA>
 }
 
 void ListaSentencias():{}
@@ -249,18 +223,42 @@ void Sentencia() : {}
         LOOKAHEAD(3) Declaracion()             |
         LOOKAHEAD(3) AsignacionArregloMatriz() |
         LOOKAHEAD(2) Asignacion()              |
-        EstructuraControl()                   |
-        LlamadaFuncion()                      |
-        Imprimir()                            |
-        SentenciasSaltos()                                             
+        EstructuraControl()                    |
+        LlamadaFuncion()                       |
+        Imprimir()                             |
+        SentenciasSaltos()                     |
+        OrfandadSino()
     } catch (ParseException e) {
         reporteErrores(e, "Sentencia");
+    }
+}
+
+void OrfandadSino() : { 
+    Token t; 
+}
+{
+    ( 
+        t = <SINO_SI> <PAREN_ABRE> Condicion() <PAREN_CIERRA> <LLAVE_ABRE> ListaSentencias() <LLAVE_CIERRA> 
+        | 
+        t = <SINO> <LLAVE_ABRE> ListaSentencias() <LLAVE_CIERRA> 
+    )
+    {
+        System.out.println("Error en linea " + t.beginLine 
+            + ", columna " + t.beginColumn 
+            + " [Sintáctico]: error en el token '" + t.image 
+            + "'; se encontró una estructura condicional incompleta (falta el bloque 'si' previo).");
+        Heroa.totalErrores++;
     }
 }
 
 // ─────────────────────────────────────────────
 //  DECLARACIONES Y ASIGNACIONES
 // ─────────────────────────────────────────────
+
+void TipoDato():{}
+{
+    <ENTERO> | <DECIMAL> | <CHAR> | <BOOLEANO> | <CADENA>
+}
 
 void Declaracion() : {}
 {
@@ -290,7 +288,7 @@ void OperadorAsignacion():{}
     <ASIGNACION_DIVISION>      |
     <ASIGNACION_MODULO>        |
     <ASIGNACION_SUMA>          |
-    <ASIGNACION_RESTA>         |
+    <ASIGNACION_RESTA>         
 }
 
 // ─────────────────────────────────────────────
@@ -351,134 +349,164 @@ void Potencia():{}
 
 void Atomo():{}
 {
-    LOOKAHEAD(2) AccesoMatriz()|
-    LOOKAHEAD(2) AccesoArreglo()|
-    LOOKAHEAD(2) LlamadaFuncionInterna()|
+    LOOKAHEAD(AccesoMatriz()) AccesoMatriz()                   |
+    LOOKAHEAD(AccesoArreglo()) AccesoArreglo()                 |
+    LOOKAHEAD(LlamadaFuncionInterna()) LlamadaFuncionInterna() |
+    <ID_VARIABLE>                                              | 
+    <ID_CONSTANTE>                                             | 
+    ValorVariable()                                            | 
+    Leer()                                                     |
+    <PAREN_ABRE> ExpLogica() <PAREN_CIERRA>
 }
+
+void ValorVariable():{}
+{
+    <VALOR_NUMERO> |
+    <VALOR_CADENA> |
+    <VALOR_CHAR>   |
+    <VERDADERO>    |
+    <FALSO>
+}
+
+// ─────────────────────────────────────────────
+//  ESTRUCTURAS DE CONTROL
+// ─────────────────────────────────────────────
+
+void EstructuraControl():{}
+{
+    Condicionales() |
+    Ciclos()
+}
+
 // ─────────────────────────────────────────────
 //  CONDICIONALES
 // ─────────────────────────────────────────────
 
-void Condicional() : {}
+void Condicionales() : {}
 {
-    <SI> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA>
-    <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
-    (
-        LOOKAHEAD(2)
-        <SINO> <SI> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA> // Cambio aquí
-        <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
-    )*
-    (
-        LOOKAHEAD(1)
-        <SINO>
-        <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
-    )?
+    <SI><PAREN_ABRE> Condicion() <PAREN_CIERRA>
+    <LLAVE_ABRE> ListaSentencias() <LLAVE_CIERRA>
+    (BloqueSino())?
+}
+
+void BloqueSino():{}
+{
+    LOOKAHEAD(2) ListaSinoSi() (OpcionSinoFinal())? |
+    OpcionSinoFinal()
+}
+
+void ListaSinoSi():{}
+{
+    <SINO_SI><PAREN_ABRE> Condicion() <PAREN_CIERRA>
+    <LLAVE_ABRE> ListaSentencias() <LLAVE_CIERRA>
+    (ListaSinoSi())?
+}
+
+void OpcionSinoFinal():{}
+{
+    <SINO> <LLAVE_ABRE> ListaSentencias()<LLAVE_CIERRA>
+}
+
+void Condicion():{}
+{
+    ExpLogica()
 }
 
 // ─────────────────────────────────────────────
 //  CICLOS
 // ─────────────────────────────────────────────
 
-void Ciclo() : {}
+void Ciclos() : {}
 {
     Mientras()      |
     HacerMientras() |
     Para()
 }
 
-void Mientras() : {}
-{
-    <MIENTRAS> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA>
-    <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
-}
-
-void HacerMientras() : {}
-{
-    <HACER> <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
-    <MIENTRAS> <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA> <DELIMITADOR>
-}
-
-void Para() : {}
+void Para():{}
 {
     <PARA> <PAREN_ABRE>
-        InicioPara() <DELIMITADOR>
-        ExpresionLogica() <DELIMITADOR>
-        ActualizacionPara()
+        AsignacionPara() <DELIMITADOR>
+        Condicion() <DELIMITADOR>
+        Actualizacion()
     <PAREN_CIERRA>
-    <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
+    <LLAVE_ABRE> ListaSentencias() <LLAVE_CIERRA>
 }
 
-void InicioPara() : {}
+void AsignacionPara():{}
 {
-    LOOKAHEAD(3) DeclaracionPara() | AsignacionPara()
+    <VARIABLE> TipoDato() <ID_VARIABLE> <ASIGNACION> Valor()
 }
 
-void DeclaracionPara() : {}
+void Actualizacion():{}
 {
-    <VARIABLE> TipoDato() <IDENTIFICADOR> <ASIGNACION> ExpresionAritmetica()
+    <ID_VARIABLE> OperadorAsignacionAritmetico() Valor()
 }
 
-void AsignacionPara() : {}
+void OperadorAsignacionAritmetico():{}
 {
-    <IDENTIFICADOR> <ASIGNACION> ExpresionAritmetica()
+    <ASIGNACION_MULTIPLICACION> |
+    <ASIGNACION_DIVISION>       |
+    <ASIGNACION_SUMA>           |
+    <ASIGNACION_RESTA>          |
+    <ASIGNACION_MODULO>
 }
 
-void ActualizacionPara() : {}
+void Mientras():{}
 {
-    <IDENTIFICADOR>
-    (
-        <ASIGNACION_SUMA>           |
-        <ASIGNACION_RESTA>          |
-        <ASIGNACION_MULTIPLICACION> |
-        <ASIGNACION_DIVISION>       |
-        <ASIGNACION_MODULO>         |
-        <ASIGNACION>
-    )
-    ExpresionAritmetica()
+    <MIENTRAS> <PAREN_ABRE> Condicion() <PAREN_CIERRA>
+    <LLAVE_ABRE> ListaSentencias() <LLAVE_CIERRA>
+}
+
+void HacerMientras():{}
+{
+    <HACER> <LLAVE_ABRE> ListaSentencias() <LLAVE_CIERRA>
+    <MIENTRAS> <PAREN_ABRE> Condicion() <PAREN_CIERRA> <DELIMITADOR>
+}
+
+void SentenciasSaltos():{}
+{
+    (<ROMPER> | <CONTINUAR>) <DELIMITADOR>
 }
 
 // ─────────────────────────────────────────────
 //  FUNCIONES
 // ─────────────────────────────────────────────
 
-void DefFuncion() : {}
+void DefFuncion():{}
 {
-    <FUNCION> <IDENTIFICADOR> <PAREN_ABRE>
-    (ListaParametros())?
-    <PAREN_CIERRA>
-    <LLAVE_ABRE> (Sentencia())* <LLAVE_CIERRA>
+    <FUNCION> <ID_VARIABLE> <PAREN_ABRE> (ListaParametros())? <PAREN_CIERRA>
+    <LLAVE_ABRE> SentenciasFuncion() <LLAVE_CIERRA>
 }
 
-void LlamadaFuncion() : {}
+void ListaParametros():{}
 {
-    <IDENTIFICADOR> <PAREN_ABRE>
-    (ListaArgumentos())?
-    <PAREN_CIERRA> <DELIMITADOR>
+    TipoDato() <ID_VARIABLE> (<COMA> ListaParametros())*
 }
 
-void LlamadaFuncionInterna() : {}
+void SentenciasFuncion():{}
 {
-    <IDENTIFICADOR> <PAREN_ABRE> (ListaArgumentos())? <PAREN_CIERRA>
+    (LOOKAHEAD(2) ListaSentencias())? (Retorno())?
 }
 
-void ListaParametros() : {}
+void Retorno():{}
 {
-    Parametro() (<COMA> Parametro())*
+    <RETORNAR>(Valor())? <DELIMITADOR>
 }
 
-void Parametro() : {}
+void LlamadaFuncion():{}
 {
-    TipoDato() <IDENTIFICADOR>
+    <ID_VARIABLE><PAREN_ABRE>(ListaArgumentos())?<PAREN_CIERRA><DELIMITADOR>
 }
 
-void ListaArgumentos() : {}
+void LlamadaFuncionInterna():{}
 {
-    Argumento() (<COMA> Argumento())*
+    <ID_VARIABLE><PAREN_ABRE>(ListaArgumentos())?<PAREN_CIERRA>
 }
 
-void Argumento() : {}
+void ListaArgumentos():{}
 {
-    ExpresionLogica()
+    Valor() (<COMA> ListaArgumentos())*
 }
 
 // ─────────────────────────────────────────────
@@ -487,109 +515,62 @@ void Argumento() : {}
 
 void Imprimir() : {}
 {
-    <IMPRIMIR> <PAREN_ABRE>
-    (ExpresionLogica())?
-    <PAREN_CIERRA> <DELIMITADOR>
+    <IMPRIMIR><PAREN_ABRE>(Valor())?<PAREN_CIERRA><DELIMITADOR>
 }
 
-void Retornar() : {}
+void Leer():{}
 {
-    <RETORNAR>
-    (LOOKAHEAD(2) ExpresionLogica())?
-    <DELIMITADOR>
+    <LEER><PAREN_ABRE>(<VALOR_CADENA>)? <PAREN_CIERRA>
 }
 
 // ─────────────────────────────────────────────
-//  TIPOS Y JERARQUÍA DE EXPRESIONES
+//  ARREGLOS Y MATRICES
 // ─────────────────────────────────────────────
-
-void TipoDato() : {}
-{
-    <ENTERO> | <DECIMAL> | <BOOLEANO> | <CADENA> | <CHAR>
-}
-
-void Expresion() : {}
-{
-    ExpresionLogica()
-}
-
-void ExpresionLogica() : {}
-{
-    ExpresionRelacional() ((<AND> | <OR>) ExpresionRelacional())*
-}
-
-void ExpresionRelacional() : {}
-{
-    ExpresionAritmetica()
-    (
-        (<IGUAL_QUE> | <DIFERENTE_DE> | <MAYOR_QUE> | <MENOR_QUE> | <MAYOR_IGUAL> | <MENOR_IGUAL>)
-        ExpresionAritmetica()
-    )?
-}
-
-void ExpresionAritmetica() : {}
-{
-    Termino() ((<SUMA> | <RESTA>) Termino())*
-}
-
-void Termino() : {}
-{
-    Potencia() ((<MULTIPLICACION> | <DIVISION> | <MODULO>) Potencia())*
-}
-
-void Potencia() : {}
-{
-    Factor() (<POTENCIA> Factor())*
-}
-
-void Factor() : {}
-{
-    LOOKAHEAD(2) LlamadaFuncionInterna()              |
-    <NOT> Factor()                                    |
-    <PAREN_ABRE> ExpresionLogica() <PAREN_CIERRA>     |
-    <VALOR_NUMERO>                                    |
-    <VALOR_CADENA>                                    |
-    <VALOR_CHAR>                                      |
-    <VERDADERO>                                       |
-    <FALSO>                                           |
-    <IDENTIFICADOR>                                   |
-    <LEER> <PAREN_ABRE> (<VALOR_CADENA>)? <PAREN_CIERRA>
-}
 
 void DeclaracionArregloMatriz() : {}
 {
-    <VARIABLE> <ARREGLO> TipoDato() <IDENTIFICADOR> 
-    <CORCHETE_ABRE> ExpresionAritmetica() <CORCHETE_CIERRA> // Arreglo 1D
+    <VARIABLE> 
     (
-        // Si hay otro corchete, es una Matriz 2D
-        <CORCHETE_ABRE> ExpresionAritmetica() <CORCHETE_CIERRA> 
-        ( <ASIGNACION> <LLAVE_ABRE> ListaFilas() <LLAVE_CIERRA> )?
-    | 
-        // Si no, sigue como Arreglo 1D
+        <ARREGLO> TipoDato() <ID_VARIABLE> 
+        <CORCHETE_ABRE> <VALOR_NUMERO> <CORCHETE_CIERRA> 
         ( <ASIGNACION> <LLAVE_ABRE> ListaValores() <LLAVE_CIERRA> )?
+        |
+        <MATRIX> TipoDato() <ID_VARIABLE> 
+        <CORCHETE_ABRE> <VALOR_NUMERO> <CORCHETE_CIERRA> 
+        <CORCHETE_ABRE> <VALOR_NUMERO> <CORCHETE_CIERRA> 
+        ( <ASIGNACION> <LLAVE_ABRE> ListaFilas() <LLAVE_CIERRA> )?
     )
     <DELIMITADOR>
 }
 
+void AccesoArreglo() : {}
+{
+    <ID_VARIABLE> <CORCHETE_ABRE> Indice() <CORCHETE_CIERRA>
+}
+
+void AccesoMatriz() : {}
+{
+    <ID_VARIABLE> <CORCHETE_ABRE> Indice() <CORCHETE_CIERRA> 
+    <CORCHETE_ABRE> Indice() <CORCHETE_CIERRA>
+}
+
 void AsignacionArregloMatriz() : {}
 {
-    <IDENTIFICADOR> <CORCHETE_ABRE> ExpresionAritmetica() <CORCHETE_CIERRA>
-    ( <CORCHETE_ABRE> ExpresionAritmetica() <CORCHETE_CIERRA> )? // Opcional 2D
-    <ASIGNACION> ExpresionLogica() <DELIMITADOR>
+    ( LOOKAHEAD(AccesoMatriz()) AccesoMatriz() | AccesoArreglo() ) 
+    <ASIGNACION> Valor() <DELIMITADOR>
+}
+
+void Indice() : {}
+{
+    <VALOR_NUMERO> | <ID_VARIABLE>
 }
 
 void ListaValores() : {}
 {
-    ExpresionLogica() (<COMA> ExpresionLogica())*
+    ValorVariable() ( <COMA> ListaValores() )?
 }
 
 void ListaFilas() : {}
 {
-    <LLAVE_ABRE> ListaValores() <LLAVE_CIERRA>
-    (<COMA> <LLAVE_ABRE> ListaValores() <LLAVE_CIERRA>)*
-}
-
-void SentenciaSalto() : {}
-{
-    (<ROMPER> | <CONTINUAR>) <DELIMITADOR>
+    <LLAVE_ABRE> ListaValores() <LLAVE_CIERRA> ( <COMA> ListaFilas() )?
 }

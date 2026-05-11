@@ -1,0 +1,30 @@
+principal {
+    \\\ Prueba de Código Correcto y Limpio
+    constante decimal PI = 3.1416;
+    variable entero iteraciones = 3;
+    
+    \\\ Declaración e inicialización de arreglos
+    variable arreglo entero valores [3] = {10, 20, 30};
+
+    \\\ Evaluando un ciclo mientras
+    mientras (iteraciones > 0) {
+        imprimir("Ejecutando iteracion...");
+        iteraciones =- 1;
+    }
+
+    \\\ Evaluando condicionales completos
+    si (PI >= 3.14 && PI <= 3.15) {
+        imprimir("El valor de PI es correcto");
+    } sino {
+        imprimir("Valor incorrecto");
+    }
+
+    \\\ Llamada a una función
+    variable decimal area = calcularArea(5.0);
+    imprimir(area);
+}
+
+\\\ Declaración de función fuera del principal
+funcion calcularArea (decimal radio) {
+    retornar 3.1416 * radio ** 2;
+}

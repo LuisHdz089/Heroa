@@ -1,0 +1,17 @@
+principal {
+    \\\ Prueba de Error Sintáctico
+    variable cadena saludo = "Hola mundo"
+    \\\ ERROR: Falta el delimitador ';' en la línea anterior
+
+    imprimir(saludo);
+
+    \\\ ERROR: Ciclo 'para' mal estructurado (falta la condición y actualización)
+    para (variable entero i = 0;) {
+        imprimir(i);
+    }
+
+    \\\ ERROR: Estructura condicional huérfana
+    sino {
+        imprimir("Esto activará la trampa OrfandadSino");
+    }
+}
