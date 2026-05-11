@@ -38,6 +38,6 @@ El compilador procesa una gramática completa que incluye:
 2. Compilar las clases Java generadas:
     ```bash
    javac *. java
-3. Ejecutar el programa utilizando un archivo de entrada (**ej. prueba.txt**)
+3. Ejecutar el programa utilizando un archivo de entrada (**ej. prueba_correcta.txt**)
    ```bash
    java Heroa
