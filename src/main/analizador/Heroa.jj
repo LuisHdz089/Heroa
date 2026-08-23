@@ -28,7 +28,7 @@ public class Heroa {
                 + " [global]: token inesperado '" + e.currentToken.next.image + "'");
             totalErrores++;
         } catch (TokenMgrError e) {
-            System.out.println("Error Léxico fatal: " + e.getMessage());
+            System.out.println("Error Léxico grave: " + e.getMessage());
             totalErrores++;
         }
     }
@@ -138,18 +138,35 @@ void reporteErrores(ParseException e, String regla) {
     Token t = e.currentToken.next; 
     if (t.kind != ERROR_LEXICO) {
         StringBuilder sugerencia = new StringBuilder();
+        boolean esperaTipoDato = false;
+        boolean esperaPrincipal = false;
         for (int i = 0; i < e.expectedTokenSequences.length; i++) {
             for (int j = 0; j < e.expectedTokenSequences[i].length; j++) {
-                String esperado = e.tokenImage[e.expectedTokenSequences[i][j]];
+                int tokenId = e.expectedTokenSequences[i][j];
+                String esperado = e.tokenImage[tokenId];
                 if (sugerencia.indexOf(esperado) < 0) {
                     sugerencia.append(esperado).append(" ");
                 }
+                if (tokenId == ENTERO || tokenId == DECIMAL || tokenId == CHAR
+                        || tokenId == BOOLEANO || tokenId == CADENA) {
+                    esperaTipoDato = true;
+                } else if (tokenId == PRINCIPAL) {
+                    esperaPrincipal = true;
+                }
             }
+        }
+        String mensaje;
+        if (esperaPrincipal) {
+            mensaje = "el programa debe comenzar con la palabra reservada 'principal'.";
+        } else if (esperaTipoDato) {
+            mensaje = "se esperaba un tipo de dato (entero, decimal, caracter, booleano, cadena).";
+        } else {
+            mensaje = "se esperaba " + sugerencia.toString().trim() + " después de este token.";
         }
         System.out.println("Error en linea " + t.beginLine 
             + ", columna " + t.beginColumn 
             + " [Sintáctico]: error en el token '" + t.image 
-            + "'; se esperaba " + sugerencia.toString().trim() + " después de este token.");
+            + "'; " + mensaje);
             
         Heroa.totalErrores++;
     }
@@ -167,7 +184,8 @@ void reporteErrores(ParseException e, String regla) {
             } else {
                 break;
             }
-        } else if (tok.kind == DELIMITADOR && balanceLlaves == 0) {
+        } else if (balanceLlaves == 0
+                && (tok.kind == DELIMITADOR || esTokenDeSincronizacion(tok))) {
             break; 
         }
         getNextToken();
@@ -178,6 +196,17 @@ void reporteErrores(ParseException e, String regla) {
     if (getToken(1).kind == DELIMITADOR) {
         getNextToken();
     }
+}
+
+JAVACODE
+boolean esTokenDeSincronizacion(Token t) {
+    return t.kind == VARIABLE   || t.kind == CONSTANTE  ||
+           t.kind == SI         || t.kind == SINO       ||
+           t.kind == SINO_SI    || t.kind == MIENTRAS   ||
+           t.kind == PARA       || t.kind == HACER      ||
+           t.kind == FUNCION    || t.kind == IMPRIMIR   ||
+           t.kind == LEER       || t.kind == ROMPER     ||
+           t.kind == CONTINUAR;
 }
 
 // ═════════════════════════════════════════════
@@ -312,9 +341,9 @@ void TerminoLogico():{}
 
 void FactorLogico():{}
 {
-    <NOT> FactorLogico()                               |
-    LOOKAHEAD("(" ExpLogica() ")") "(" ExpLogica() ")" |
-    ExpRelacional()
+    <NOT> FactorLogico()
+    |
+    ExpRelacional() 
 }
 
 void ExpRelacional():{}
@@ -349,14 +378,14 @@ void Potencia():{}
 
 void Atomo():{}
 {
-    LOOKAHEAD(AccesoMatriz()) AccesoMatriz()                   |
-    LOOKAHEAD(AccesoArreglo()) AccesoArreglo()                 |
-    LOOKAHEAD(LlamadaFuncionInterna()) LlamadaFuncionInterna() |
-    <ID_VARIABLE>                                              | 
-    <ID_CONSTANTE>                                             | 
-    ValorVariable()                                            | 
-    Leer()                                                     |
-    <PAREN_ABRE> ExpLogica() <PAREN_CIERRA>
+    LOOKAHEAD(AccesoMatriz()) AccesoMatriz()                    |
+    LOOKAHEAD(AccesoArreglo()) AccesoArreglo()                  |
+    LOOKAHEAD(LlamadaFuncionInterna()) LlamadaFuncionInterna()  |
+    <ID_VARIABLE>                                               |
+    <ID_CONSTANTE>                                              |
+    ValorVariable()                                             |
+    Leer()                                                      |
+    <PAREN_ABRE> ExpAritmetica() <PAREN_CIERRA>
 }
 
 void ValorVariable():{}
