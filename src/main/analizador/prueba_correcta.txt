@@ -1,0 +1,50 @@
+*\ 
+   PRUEBA INTEGRAL HEROA
+   Este código valida el léxico, sintaxis y 
+   la jerarquía de expresiones.
+\*
+
+principal {
+    \\\ Declaración de constantes y variables
+    constante decimal PI = 3.1416;
+    variable entero radio = 5;
+    variable cadena msg = "Calculando area...";
+    
+    \\\ Arreglos y Matrices
+    variable arreglo entero muestras[3] = {10, 20, 30};
+    variable matriz booleano estados[2][2];
+
+    imprimir(msg);
+
+    \\\ Prueba de expresiones y paréntesis corregidos 
+    variable entero resultado;
+    resultado = (radio * 2) / 2; 
+    
+    \\\ Estructura de Control (Si - Sino Si - Sino)
+    si (radio > 0 && radio <= 10) {
+        imprimir("Radio en rango");
+        variable decimal area = PI * radio ** 2;
+        imprimir(area);
+    } sino_si (radio == 0) {
+        imprimir("El radio es cero");
+    } sino {
+        imprimir("Radio fuera de rango");
+    }
+
+    \\\ Ciclo Para
+    para (variable entero i = 0; i < 3; i =+ 1) {
+        imprimir(muestras[i]);
+    }
+
+    \\\ Llamada a función interna
+    variable entero doble;
+    doble = calcularDoble(radio);
+    imprimir(doble);
+}
+
+\\\ Definición de Funciones (Fuera del principal)
+funcion calcularDoble(entero n) {
+    variable entero res;
+    res = n * 2;
+    retornar res;
+}
