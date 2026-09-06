@@ -1,8 +1,5 @@
 principal {
-    variable entero numero = 10$;
-    variable datoInvalido = 5;
-    imprimir("Valor procesado")
-    sino {
-        imprimir("Bloque huerfano");
-    }
+    variable entero numero = 10;
+    variable entero datoInvalido = 5;
+    imprimir("Valor procesado");
 }

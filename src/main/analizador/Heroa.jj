@@ -174,7 +174,7 @@ void reporteErrores(ParseException e, String regla) {
         Heroa.totalErrores++;
     }
 
-    if (getToken(1) == t) {
+    if (getToken(1) == t && t.kind != SINO && t.kind != SINO_SI) {
         getNextToken();
     }
 
@@ -257,7 +257,7 @@ void Sentencia() : {}
 {
     try {
         LOOKAHEAD(3) DeclaracionArregloMatriz()|
-        LOOKAHEAD(3) Declaracion()             |
+        Declaracion()                          |
         LOOKAHEAD(3) AsignacionArregloMatriz() |
         LOOKAHEAD(2) Asignacion()              |
         EstructuraControl()                    |
