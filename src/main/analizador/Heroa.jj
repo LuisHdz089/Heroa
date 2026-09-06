@@ -1,5 +1,5 @@
 options {
-    OUTPUT_DIRECTORY = "C:\\Users\\Luis Hernandez\\Downloads\\Compilador\\Heroa\\ArchivosGenerados";
+    OUTPUT_DIRECTORY = "./ArchivosGenerados";
 }
 PARSER_BEGIN(Heroa)
 import java.io.*;
@@ -173,6 +173,11 @@ void reporteErrores(ParseException e, String regla) {
             
         Heroa.totalErrores++;
     }
+
+    if (getToken(1) == t) {
+        getNextToken();
+    }
+
     int balanceLlaves = 0;
     
     while (true) {
@@ -589,7 +594,7 @@ void AccesoMatriz() : {}
 void AsignacionArregloMatriz() : {}
 {
     ( LOOKAHEAD(AccesoMatriz()) AccesoMatriz() | AccesoArreglo() ) 
-    <ASIGNACION> Valor() <DELIMITADOR>
+    OperadorAsignacion() Valor() <DELIMITADOR>
 }
 
 void Indice() : {}
